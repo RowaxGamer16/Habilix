@@ -1,0 +1,78 @@
+/* Centra todo el contenido dentro de IonContent */
+.content-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    height: 100%;
+    padding: 20px;
+    background-color: #f9f9f9;
+  }
+  
+  /* Estilo de los títulos */
+  .ion-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2d2d2d;
+    text-align: center;
+    margin: 20px 0;
+  }
+  
+  /* Estilo de los textos dentro de los acordeones */
+  .ion-text p {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.6;
+  }
+  
+  /* Estilo de los acordeones */
+  .ion-accordion {
+    margin-bottom: 10px;
+  }
+  
+  /* Estilo de los encabezados de los acordeones */
+  .ion-item[slot="header"] {
+    font-weight: bold;
+    background-color: #007bff;
+    color: white;
+  }
+  
+  /* Estilo de los contenidos dentro de los acordeones */
+  .ion-accordion .ion-padding {
+    background-color: #f4f4f4;
+    border-radius: 5px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Añadir un poco de espaciado entre los acordeones */
+  .ion-accordion-group {
+    margin-top: 20px;
+  }
+  
+  .content-center {
+    --background: #f7f9fc;
+    padding: 16px;
+  }
+  
+  .ion-padding {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .ion-padding p {
+    font-size: 16px;
+    color: #333;
+    line-height: 1.5;
+  }
+  
+  ion-item[slot="header"] {
+    --color: #1e90ff;
+    font-weight: bold;
+  }
+  
+  ion-item[slot="header"]:hover {
+    background-color: #e0f7fa;
+    transition: background-color 0.3s;
+  }
+  

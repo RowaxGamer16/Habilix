@@ -1,0 +1,199 @@
+/* Configuración básica de la página */
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f7fc;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Título principal */
+.welcome-title {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #4a90e2;
+  text-align: center;
+  margin-bottom: 10px;
+  animation: fadeInUp 1s ease-out;
+}
+
+.welcome-description {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #666;
+  margin-bottom: 40px;
+  animation: fadeInUp 1s ease-out;
+}
+
+/* Botones */
+.button-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  animation: fadeInUp 1.5s ease-out;
+}
+
+button {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 12px 25px;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+button:hover {
+  transform: scale(1.1);
+  box-shadow: 0px 6px 25px rgba(0, 0, 0, 0.2);
+}
+
+.primary {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+}
+
+.secondary {
+  background-color: #50e3c2;
+  color: white;
+  border: none;
+}
+
+/* Sección de Habilidades Destacadas */
+.featured-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4a90e2;
+  text-align: center;
+  margin-bottom: 30px;
+  animation: fadeInUp 1.5s ease-out;
+}
+
+/* Tarjetas de habilidades */
+.IonCard {
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  margin-bottom: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.IonCard:hover {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.15);
+}
+
+.IonCardHeader {
+  background-color: #f1f8ff;
+  padding: 15px;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.IonCardHeader:hover {
+  background-color: #dfe9fc;
+}
+
+.IonCardTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #4a90e2;
+}
+
+/* Testimonios */
+.testimonials-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4a90e2;
+  text-align: center;
+  margin-bottom: 30px;
+  animation: fadeInUp 1.5s ease-out;
+}
+
+.IonCardSubtitle {
+  font-size: 1.2rem;
+  color: #888;
+  margin-top: 5px;
+}
+
+.IonCardContent {
+  font-size: 1rem;
+  color: #555;
+  text-align: center;
+}
+
+/* Galería de Imágenes */
+.gallery-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4a90e2;
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 20px;
+  animation: fadeInUp 2s ease-out;
+}
+
+.IonImg {
+  border-radius: 10px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+  width: 100%;
+}
+
+.IonImg:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.15);
+  filter: brightness(1.1);
+}
+
+/* Servicios */
+.services-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #4a90e2;
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 20px;
+  animation: fadeInUp 2s ease-out;
+}
+
+/* Estilos adicionales para la estructura */
+.IonRow {
+  margin-bottom: 30px;
+}
+
+.IonCol {
+  display: flex;
+  justify-content: center;
+}
+
+.content-center {
+  padding: 20px;
+}
+
+/* Animaciones de entrada */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Efecto de aparición suave para elementos */
+.content-center {
+  animation: fadeIn 1.5s ease-out;
+}

@@ -1,0 +1,195 @@
+/* Variables globales para colores */
+:root {
+  --background-light: #ffffff;
+  --background-dark: #121212;
+  --text-light: #000000;
+  --text-dark: #ffffff;
+  --primary-light: #3880ff;
+  --primary-dark: #4d8cf3;
+  --card-light: #ffffff;
+  --card-dark: #333333;
+  --button-light: #3880ff;
+  --button-dark: #4d8cf3;
+  --toggle-light: #3880ff;
+  --toggle-dark: #4d8cf3;
+}
+
+/* Estilo global */
+body {
+  background-color: var(--background-light);
+  color: var(--text-light);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body.dark {
+  background-color: var(--background-dark);
+  color: var(--text-dark);
+}
+
+/* Estilo de la tarjeta del perfil */
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--card-light);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  width: 350px;
+  margin: 20px auto;
+}
+
+body.dark .profile-card {
+  background-color: var(--card-dark);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+}
+
+/* Foto de perfil */
+.profile-card .profile-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin-bottom: 20px;
+  object-fit: cover;
+  border: 4px solid var(--primary-light);
+}
+
+body.dark .profile-card .profile-image {
+  border: 4px solid var(--primary-dark);
+}
+
+/* Título del perfil */
+.profile-card h2 {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--text-light);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+body.dark .profile-card h2 {
+  color: var(--text-dark);
+}
+
+/* Descripción del perfil */
+.profile-card p {
+  font-size: 1rem;
+  color: var(--text-light);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+body.dark .profile-card p {
+  color: var(--text-dark);
+}
+
+/* Botones de acción */
+.profile-card .action-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.profile-card .action-buttons .ion-button {
+  width: 48%;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.profile-card .action-buttons .ion-button:first-child {
+  background-color: var(--primary-light);
+}
+
+body.dark .profile-card .action-buttons .ion-button:first-child {
+  background-color: var(--primary-dark);
+}
+
+/* Estilo de los botones de acción */
+.profile-card .action-buttons .ion-button {
+  background-color: var(--button-light);
+  color: var(--text-light);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .profile-card .action-buttons .ion-button {
+  background-color: var(--button-dark);
+  color: var(--text-dark);
+}
+
+/* Efecto hover en botones */
+.profile-card .action-buttons .ion-button:hover {
+  opacity: 0.9;
+}
+
+/* Detalles del perfil */
+.profile-details {
+  background-color: var(--card-light);
+  border-radius: 15px;
+  padding: 15px;
+  margin-top: 30px;
+  width: 350px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+body.dark .profile-details {
+  background-color: var(--card-dark);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+}
+
+.profile-details h3 {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+
+body.dark .profile-details h3 {
+  color: var(--text-dark);
+}
+
+.profile-details p {
+  font-size: 1rem;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+
+body.dark .profile-details p {
+  color: var(--text-dark);
+}
+
+/* Estilo del formulario de edición de perfil */
+.profile-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+  width: 350px;
+}
+
+.profile-edit-form .ion-input {
+  --background: var(--card-light);
+  --border-radius: 10px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+
+body.dark .profile-edit-form .ion-input {
+  --background: var(--card-dark);
+}
+
+/* Estilo del botón para guardar cambios */
+.profile-edit-form .ion-button {
+  background-color: var(--primary-light);
+  color: var(--text-light);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+body.dark .profile-edit-form .ion-button {
+  background-color: var(--primary-dark);
+  color: var(--text-dark);
+}

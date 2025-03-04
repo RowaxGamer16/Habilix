@@ -1,0 +1,108 @@
+/* Fondo con degradado más vibrante */
+.login-container {
+  --background: linear-gradient(to right, #ffffff, #000000);
+  display: flex;
+  align-items: center;  /* Centra verticalmente */
+  justify-content: center;  /* Centra horizontalmente */
+  min-height: 100vh;  /* Asegura que ocupe toda la altura de la pantalla */
+  padding: 60px;  /* Más espacio */
+  background: var(--background);  /* Asegura que el fondo se vea */
+  position: relative;  /* Para que funcione flexbox correctamente */
+}
+
+/* Tarjeta de login más compacta y centrada */
+.login-card {
+  width: 100%;
+  max-width: 580px;  /* Más pequeña */
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(1, 1, 1, 0.25);
+  padding: 25px;
+  background: white;
+  text-align: center;
+}
+
+/* Título más compacto */
+h2 {
+  font-size: 22px;
+  font-weight: bold;
+  color: #4a90e2;
+  margin-bottom: 15px;
+}
+
+/* Inputs más compactos con bordes suaves */
+.custom-input {
+  --border-radius: 10px;
+  --highlight-color-focused: #4a90e2;
+  font-size: 16px;
+  padding: 10px;
+}
+
+/* Botón principal más pequeño y equilibrado */
+.main-button {
+  --background: #4a90e2;
+  --background-hover: #357bd8;
+  --color: white;
+  margin-top: 12px;
+  border-radius: 10px;
+  font-size: 16px;
+  padding: 12px;
+  transition: all 0.3s ease-in-out;
+  font-weight: bold;
+}
+
+.main-button:hover {
+  filter: brightness(1.15);
+  transform: scale(1.03);
+}
+
+/* Botón de alternar con bordes más suaves */
+.switch-button {
+  --border-radius: 10px;
+  --border-color: #4a90e2;
+  --color: #4a90e2;
+  margin-top: 12px;
+  font-size: 14px;
+  padding: 10px;
+  transition: all 0.3s ease-in-out;
+  font-weight: bold;
+}
+
+.switch-button:hover {
+  background: #4a90e2;
+  color: white;
+  transform: scale(1.03);
+}
+
+/* ✅ MEJORAS RESPONSIVAS */
+
+/* Ajustes para móviles */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 20px;  /* Menos padding para aprovechar el espacio */
+  }
+
+  .login-card {
+    max-width: 90%;  /* Se expande más en pantallas pequeñas */
+    padding: 20px;
+  }
+
+  h2 {
+    font-size: 18px;  /* Reduce el tamaño del título */
+  }
+
+  .custom-input {
+    font-size: 14px;  /* Reduce el tamaño de los inputs */
+  }
+
+  .main-button, .switch-button {
+    font-size: 14px;
+    padding: 10px;
+  }
+}
+
+/* Ajustes para tablets */
+@media (max-width: 768px) {
+  .login-card {
+    max-width: 75%;
+  }
+}
