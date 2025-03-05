@@ -113,6 +113,11 @@ const Cursos: React.FC = () => {
   };
 
   const toggleSuscripcion = (id: number) => {
+    const isUserLoggedIn = localStorage.getItem('authToken') !== null;
+    if (!isUserLoggedIn) {
+      alert('Necesitas loguearte o registrarte primero para suscribirte a un curso.');
+      return;
+    }
     setSuscripciones((prevSuscripciones) => ({
       ...prevSuscripciones,
       [id]: !prevSuscripciones[id],
@@ -129,7 +134,7 @@ const Cursos: React.FC = () => {
     ) {
       setCursos((prevCursos) => [
         ...prevCursos,
-        { ...nuevoCurso, id: prevCursos.length + 1 }, // El id debe ser único
+        { ...nuevoCurso, id: prevCursos.length + 1 },
       ]);
       setNuevoCurso({
         titulo: '',
@@ -144,7 +149,6 @@ const Cursos: React.FC = () => {
     }
   };
 
-  // Verificar si el usuario está logueado
   const isUserLoggedIn = localStorage.getItem('authToken') !== null;
 
   return (
@@ -161,7 +165,6 @@ const Cursos: React.FC = () => {
           onIonInput={(e: any) => setSearchText(e.target.value)}
         />
 
-        {/* Mostrar el botón de "Crear Nuevo Curso" solo si el usuario está logueado */}
         {isUserLoggedIn && (
           <IonButton
             onClick={() => setShowModalCrearCurso(true)}
@@ -204,7 +207,7 @@ const Cursos: React.FC = () => {
                 >
                   Ver Comentarios
                 </IonButton>
-                {suscripciones[curso.id] ? (
+                {suscripciones[curso.id] && isUserLoggedIn ? (
                   <IonButton
                     color="success"
                     onClick={() => alert(`Entraste al curso: ${curso.titulo}`)}
@@ -235,7 +238,7 @@ const Cursos: React.FC = () => {
             <div className="comentarios-list">
               {comentarios[selectedCurso?.id]?.length ? (
                 comentarios[selectedCurso.id].map((comentario, index) => (
-                  <p key={index}>&bull; {comentario}</p>
+                  <p key={index}>• {comentario}</p>
                 ))
               ) : (
                 <p>No hay comentarios aún.</p>
@@ -262,7 +265,6 @@ const Cursos: React.FC = () => {
           </IonFooter>
         </IonModal>
 
-        {/* Modal para Crear Curso */}
         <IonModal isOpen={showModalCrearCurso} onDidDismiss={() => setShowModalCrearCurso(false)}>
           <IonHeader>
             <IonToolbar>

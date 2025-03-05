@@ -101,7 +101,6 @@ const App: React.FC = () => {
                           <IonIcon icon={personCircle} slot="start" />
                           Perfil
                         </IonButton>
-                        
                       </>
                     )}
                   </IonButtons>
@@ -123,6 +122,10 @@ const App: React.FC = () => {
             <Route exact path="/">
               <Redirect to="/Inicio" />
             </Route>
+            {/* Ruta catch-all para URLs no definidas */}
+            <Route path="*">
+              <Redirect to="/Inicio" />
+            </Route>
           </IonRouterOutlet>
         </IonContent>
 
@@ -139,7 +142,7 @@ const App: React.FC = () => {
                   </div>
                 </IonCol>
                 <IonCol size="12" size-md="4" className="ion-text-center">
-                  <IonText color="medium">&copy; 2025 Derechos reservados.</IonText>
+                  <IonText color="medium">© 2025 Derechos reservados.</IonText>
                 </IonCol>
                 <IonCol size="12" size-md="4" className="ion-text-end">
                   <IonText>Redes Sociales:</IonText>
