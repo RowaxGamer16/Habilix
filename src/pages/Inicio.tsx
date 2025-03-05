@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonGrid, IonRow, IonCol, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonCardSubtitle, IonText, IonImg } from '@ionic/react';
-import { Redirect } from 'react-router-dom'; // Asegúrate de importar Redirect
-import './Inicio.css'; // Asegúrate de tener este archivo
+import { Redirect } from 'react-router-dom';
+import './Inicio.css';
 
 // Interfaces
 interface Boton {
@@ -24,13 +24,13 @@ interface Testimonio {
 interface Servicio {
   titulo: string;
   descripcion: string;
+  icono?: string; // Añadimos un campo opcional para un ícono (puedes usar imágenes o clases de íconos)
 }
 
 const Inicio: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Verificar si el usuario ya está logueado
     const token = localStorage.getItem('token');
     if (token) {
       setIsLoggedIn(true);
@@ -38,7 +38,6 @@ const Inicio: React.FC = () => {
   }, []);
 
   if (isLoggedIn) {
-    // Si el usuario está logueado, redirigir a la página "Inicio_Usuario"
     return <Redirect to="/Inicio_Usuario" />;
   }
 
@@ -59,10 +58,28 @@ const Inicio: React.FC = () => {
     { nombre: 'Juan Pérez', habilidad: 'Aprendiz de Guitarra', comentario: 'Gracias a Habilix, encontré un mentor increíble para aprender guitarra. ¡Mis habilidades mejoraron rápidamente!' }
   ];
 
-  // Servicios
+  // Servicios actualizados con más información
   const servicios: Servicio[] = [
-    { titulo: 'Conexión con Mentores', descripcion: 'Conecta con expertos que te guiarán y enseñarán habilidades de forma personalizada.' },
-    { titulo: 'Publicación de Habilidades', descripcion: 'Publica tus habilidades y ofrece tu conocimiento a la comunidad.' }
+    { 
+      titulo: 'Conexión con Mentores', 
+      descripcion: 'Encuentra expertos apasionados en diversas áreas que te guiarán paso a paso para dominar nuevas habilidades, desde música hasta tecnología.', 
+      icono: 'https://via.placeholder.com/50?text=Mentor' // Ejemplo de ícono
+    },
+    { 
+      titulo: 'Publicación de Habilidades', 
+      descripcion: 'Comparte tu experiencia y conocimientos con la comunidad. Publica tus habilidades y conviértete en mentor para ayudar a otros a crecer.', 
+      icono: 'https://via.placeholder.com/50?text=Share' 
+    },
+    { 
+      titulo: 'Aprendizaje Personalizado', 
+      descripcion: 'Accede a sesiones de aprendizaje adaptadas a tu nivel y ritmo, diseñadas para que alcances tus objetivos de manera efectiva.', 
+      icono: 'https://via.placeholder.com/50?text=Learn' 
+    },
+    { 
+      titulo: 'Comunidad Activa', 
+      descripcion: 'Únete a una red de aprendices y mentores donde puedes intercambiar ideas, colaborar en proyectos y construir conexiones valiosas.', 
+      icono: 'https://via.placeholder.com/50?text=Community' 
+    }
   ];
 
   return (
@@ -148,7 +165,7 @@ const Inicio: React.FC = () => {
             ))}
           </IonRow>
 
-          {/* Sección de Servicios */}
+          {/* Sección de Servicios actualizada */}
           <IonRow>
             <IonCol>
               <h2 className="services-title">Nuestros Servicios</h2>
@@ -157,12 +174,15 @@ const Inicio: React.FC = () => {
           <IonRow>
             {servicios.map((servicio, index) => (
               <IonCol size="12" sizeMd="6" key={index}>
-                <IonCard>
+                <IonCard className="service-card">
                   <IonCardHeader>
+                    {servicio.icono && (
+                      <IonImg src={servicio.icono} alt={servicio.titulo} style={{ width: '50px', height: '50px', marginBottom: '10px' }} />
+                    )}
                     <IonCardTitle>{servicio.titulo}</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
-                    {servicio.descripcion}
+                    <IonText>{servicio.descripcion}</IonText>
                   </IonCardContent>
                 </IonCard>
               </IonCol>
