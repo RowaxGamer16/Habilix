@@ -24,7 +24,7 @@ interface Testimonio {
 interface Servicio {
   titulo: string;
   descripcion: string;
-  icono?: string; // Añadimos un campo opcional para un ícono (puedes usar imágenes o clases de íconos)
+  icono?: string;
 }
 
 const Inicio: React.FC = () => {
@@ -58,27 +58,17 @@ const Inicio: React.FC = () => {
     { nombre: 'Juan Pérez', habilidad: 'Aprendiz de Guitarra', comentario: 'Gracias a Habilix, encontré un mentor increíble para aprender guitarra. ¡Mis habilidades mejoraron rápidamente!' }
   ];
 
-  // Servicios actualizados con más información
+  // Servicios reducidos a 2
   const servicios: Servicio[] = [
     { 
       titulo: 'Conexión con Mentores', 
       descripcion: 'Encuentra expertos apasionados en diversas áreas que te guiarán paso a paso para dominar nuevas habilidades, desde música hasta tecnología.', 
-      icono: 'https://via.placeholder.com/50?text=Mentor' // Ejemplo de ícono
+      icono: 'https://via.placeholder.com/50?text=Mentor'
     },
     { 
       titulo: 'Publicación de Habilidades', 
       descripcion: 'Comparte tu experiencia y conocimientos con la comunidad. Publica tus habilidades y conviértete en mentor para ayudar a otros a crecer.', 
-      icono: 'https://via.placeholder.com/50?text=Share' 
-    },
-    { 
-      titulo: 'Aprendizaje Personalizado', 
-      descripcion: 'Accede a sesiones de aprendizaje adaptadas a tu nivel y ritmo, diseñadas para que alcances tus objetivos de manera efectiva.', 
-      icono: 'https://via.placeholder.com/50?text=Learn' 
-    },
-    { 
-      titulo: 'Comunidad Activa', 
-      descripcion: 'Únete a una red de aprendices y mentores donde puedes intercambiar ideas, colaborar en proyectos y construir conexiones valiosas.', 
-      icono: 'https://via.placeholder.com/50?text=Community' 
+      icono: 'https://via.placeholder.com/50?text=Share'
     }
   ];
 
@@ -165,7 +155,7 @@ const Inicio: React.FC = () => {
             ))}
           </IonRow>
 
-          {/* Sección de Servicios actualizada */}
+          {/* Sección de Servicios reducida */}
           <IonRow>
             <IonCol>
               <h2 className="services-title">Nuestros Servicios</h2>

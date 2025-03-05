@@ -8,13 +8,22 @@ body {
   overflow-x: hidden;
 }
 
+/* Contenedor principal */
+.content-center {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centraliza horizontalmente los hijos */
+  animation: fadeIn 1.5s ease-out;
+}
+
 /* Título principal */
 .welcome-title {
   font-size: 3rem;
   font-weight: bold;
   color: #4a90e2;
   text-align: center;
-  margin-bottom: 10px;
+  margin: 20px 0 10px 0;
   animation: fadeInUp 1s ease-out;
 }
 
@@ -29,8 +38,9 @@ body {
 /* Botones */
 .button-row {
   display: flex;
-  justify-content: center;
+  justify-content: center; /* Centraliza los botones horizontalmente */
   gap: 20px;
+  margin: 20px 0;
   animation: fadeInUp 1.5s ease-out;
 }
 
@@ -66,7 +76,7 @@ button:hover {
   font-weight: 700;
   color: #4a90e2;
   text-align: center;
-  margin-bottom: 30px;
+  margin: 20px 0 30px 0;
   animation: fadeInUp 1.5s ease-out;
 }
 
@@ -76,7 +86,9 @@ button:hover {
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   background-color: #fff;
-  margin-bottom: 20px;
+  margin: 0 auto 20px auto; /* Centraliza la tarjeta horizontalmente */
+  max-width: 500px; /* Limita el ancho para mejor control */
+  width: 100%; /* Asegura que sea responsive */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -100,6 +112,13 @@ button:hover {
   font-size: 1.5rem;
   font-weight: 600;
   color: #4a90e2;
+  text-align: center;
+}
+
+.IonCardContent {
+  font-size: 1rem;
+  color: #555;
+  text-align: center;
 }
 
 /* Testimonios */
@@ -108,7 +127,7 @@ button:hover {
   font-weight: 700;
   color: #4a90e2;
   text-align: center;
-  margin-bottom: 30px;
+  margin: 20px 0 30px 0;
   animation: fadeInUp 1.5s ease-out;
 }
 
@@ -116,11 +135,6 @@ button:hover {
   font-size: 1.2rem;
   color: #888;
   margin-top: 5px;
-}
-
-.IonCardContent {
-  font-size: 1rem;
-  color: #555;
   text-align: center;
 }
 
@@ -130,8 +144,7 @@ button:hover {
   font-weight: 700;
   color: #4a90e2;
   text-align: center;
-  margin-top: 40px;
-  margin-bottom: 20px;
+  margin: 40px 0 20px 0;
   animation: fadeInUp 2s ease-out;
 }
 
@@ -139,8 +152,12 @@ button:hover {
   border-radius: 10px;
   transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
   width: 100%;
+  max-width: 300px; /* Limita el ancho para mejor control */
+  margin: 0 auto; /* Centraliza la imagen */
+  display: block; /* Asegura que sea un bloque para el centrado */
 }
 
+/* Efecto hover para imágenes */
 .IonImg:hover {
   transform: scale(1.1) rotate(5deg);
   box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.15);
@@ -153,23 +170,34 @@ button:hover {
   font-weight: 700;
   color: #4a90e2;
   text-align: center;
-  margin-top: 40px;
-  margin-bottom: 20px;
+  margin: 40px 0 20px 0;
   animation: fadeInUp 2s ease-out;
+}
+
+.service-card {
+  text-align: center;
+  transition: transform 0.3s ease;
+  margin: 0 auto; /* Centraliza la tarjeta */
+  max-width: 500px; /* Limita el ancho para mejor control */
+  width: 100%; /* Asegura que sea responsive */
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
 }
 
 /* Estilos adicionales para la estructura */
 .IonRow {
   margin-bottom: 30px;
+  display: flex;
+  justify-content: center; /* Centraliza los elementos dentro de la fila */
+  width: 100%;
 }
 
 .IonCol {
   display: flex;
-  justify-content: center;
-}
-
-.content-center {
-  padding: 20px;
+  justify-content: center; /* Centraliza el contenido dentro de la columna */
+  align-items: center; /* Centraliza verticalmente si es necesario */
 }
 
 /* Animaciones de entrada */
@@ -191,48 +219,4 @@ button:hover {
   to {
     opacity: 1;
   }
-}
-
-/* Efecto de aparición suave para elementos */
-.content-center {
-  animation: fadeIn 1.5s ease-out;
-}
-
-/* Inicio.css */
-
-.welcome-title {
-  font-size: 2.5rem;
-  text-align: center;
-  margin-top: 20px;
-}
-
-.welcome-description {
-  font-size: 1.2rem;
-  text-align: center;
-  color: #666;
-}
-
-.button-row {
-  justify-content: center;
-  margin: 20px 0;
-}
-
-.featured-title, .testimonials-title, .gallery-title, .services-title {
-  font-size: 2rem;
-  text-align: center;
-  margin: 20px 0;
-}
-
-.service-card {
-  text-align: center;
-  transition: transform 0.3s ease;
-}
-
-.service-card:hover {
-  transform: translateY(-5px);
-}
-
-.content-center {
-  display: flex;
-  justify-content: center;
 }

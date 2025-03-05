@@ -17,7 +17,8 @@ body.dark {
 
 /* Contenedor principal */
 .app-container {
-  position: relative; /* Necesario para que el footer absoluto se posicione respecto a este contenedor */
+  display: flex;
+  flex-direction: column;
   min-height: 100vh; /* Asegura que el contenedor ocupe toda la altura */
   background: var(--ion-background-color);
 }
@@ -41,30 +42,51 @@ ion-item:hover {
 /* Botón hamburguesa */
 ion-menu-button {
   color: var(--ion-text-color);
+  font-size: 28px; /* Tamaño ajustado para mejor visibilidad */
+  padding: 0 10px; /* Espaciado para que no se vea apretado */
+}
+
+/* Header */
+ion-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centra todo el contenido del toolbar */
+  padding: 0 10px; /* Espaciado uniforme */
+  background: var(--ion-background-color);
+}
+
+ion-toolbar ion-buttons[slot="start"] {
+  position: absolute;
+  left: 5px; /* Fija el botón hamburguesa a la izquierda */
+}
+
+ion-title {
+  text-align: center;
+  color: var(--ion-text-color);
+  font-size: 1.5rem; /* Tamaño más legible */
+  font-weight: 600; /* Peso para mejor estética */
+  flex-grow: 1; /* Ocupa el espacio central */
+  margin: 0; /* Elimina márgenes por defecto */
 }
 
 /* Contenido principal */
 ion-content {
   --transition: all 0.3s ease-in-out;
   --background: var(--ion-background-color);
-  overflow-y: auto; /* Permite scroll si el contenido es largo */
-  padding-bottom: 80px; /* Espacio para evitar que el contenido se superponga al footer */
+  overflow-y: auto;
+  flex: 1 0 auto; /* Crece para llenar el espacio disponible */
 }
 
 /* Footer */
 ion-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0; /* Evita que el footer se encoja */
   padding: 10px;
   border-top: 1px solid #e0e0e0;
   background: var(--ion-background-color);
   color: var(--ion-text-color);
-  z-index: 10; /* Asegura que esté por encima del contenido */
+  z-index: 10;
 }
 
-/* Tema oscuro para el footer */
 body.dark ion-footer {
   border-top: 1px solid #404040;
 }
@@ -92,5 +114,9 @@ ion-icon {
 @media (max-width: 768px) {
   ion-menu {
     --width: 200px;
+  }
+
+  ion-title {
+    font-size: 1.3rem; /* Ajuste para pantallas pequeñas */
   }
 }

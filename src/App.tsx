@@ -21,6 +21,7 @@ import {
   IonImg,
   IonList,
   IonItem,
+  IonTitle,
   setupIonicReact,
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
@@ -106,7 +107,7 @@ const App: React.FC = () => {
               <IonButtons slot="start">
                 <IonMenuButton autoHide={false} />
               </IonButtons>
-              <IonLabel>Habilix</IonLabel>
+              <IonTitle>Habilix</IonTitle>
             </IonToolbar>
           </IonHeader>
 
