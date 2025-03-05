@@ -1,31 +1,12 @@
-footer .ion-text-start img {
-    display: block;
-    max-width: 60px;
-    height: auto;
-  }
-  
-  footer .ion-text-end button {
-    margin: 0 5px;
-  }
-  
-  footer p {
-    font-size: 14px;
-    margin: 0;
-  }
-  
-  ion-button {
-    margin: 0 5px;
-  }
-  ion-icon {
-    font-size: 24px; /* Tamaño del icono */
-  }
-  
-  /* App.css */
+/* App.css */
 
 /* Estilo por defecto */
 body {
   --ion-background-color: #ffffff;
   --ion-text-color: #000000;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
 }
 
 /* Tema oscuro */
@@ -34,8 +15,82 @@ body.dark {
   --ion-text-color: #ffffff;
 }
 
-/* Personaliza componentes para el tema oscuro */
-body.dark ion-content {
-  background-color: var(--ion-background-color);
+/* Contenedor principal */
+.app-container {
+  position: relative; /* Necesario para que el footer absoluto se posicione respecto a este contenedor */
+  min-height: 100vh; /* Asegura que el contenedor ocupe toda la altura */
+  background: var(--ion-background-color);
+}
+
+/* Estilo del menú lateral */
+ion-menu {
+  --width: 250px;
+  --background: var(--ion-background-color);
+}
+
+/* Estilo de los ítems del menú */
+ion-item {
+  --background: transparent;
+  --color: var(--ion-text-color);
+}
+
+ion-item:hover {
+  --background: rgba(0, 0, 0, 0.1);
+}
+
+/* Botón hamburguesa */
+ion-menu-button {
   color: var(--ion-text-color);
+}
+
+/* Contenido principal */
+ion-content {
+  --transition: all 0.3s ease-in-out;
+  --background: var(--ion-background-color);
+  overflow-y: auto; /* Permite scroll si el contenido es largo */
+  padding-bottom: 80px; /* Espacio para evitar que el contenido se superponga al footer */
+}
+
+/* Footer */
+ion-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  border-top: 1px solid #e0e0e0;
+  background: var(--ion-background-color);
+  color: var(--ion-text-color);
+  z-index: 10; /* Asegura que esté por encima del contenido */
+}
+
+/* Tema oscuro para el footer */
+body.dark ion-footer {
+  border-top: 1px solid #404040;
+}
+
+/* Estilos específicos del footer */
+.ion-text-start img {
+  display: block;
+  max-width: 60px;
+  height: auto;
+}
+
+.ion-text-end button {
+  margin: 0 5px;
+}
+
+ion-button {
+  margin: 0 5px;
+}
+
+ion-icon {
+  font-size: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  ion-menu {
+    --width: 200px;
+  }
 }
