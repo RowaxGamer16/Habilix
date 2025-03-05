@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonGrid, IonRow, IonCol, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonCardSubtitle, IonText, IonImg } from '@ionic/react';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonGrid, IonRow, IonCol, IonCard, IonCardHeader, IonCardTitle, IonCardContent, IonCardSubtitle, IonText, IonImg, IonFooter } from '@ionic/react';
 import { Redirect } from 'react-router-dom';
 import './Inicio.css';
 
@@ -58,17 +58,17 @@ const Inicio: React.FC = () => {
     { nombre: 'Juan Pérez', habilidad: 'Aprendiz de Guitarra', comentario: 'Gracias a Habilix, encontré un mentor increíble para aprender guitarra. ¡Mis habilidades mejoraron rápidamente!' }
   ];
 
-  // Servicios reducidos a 2
+  // Servicios
   const servicios: Servicio[] = [
     { 
       titulo: 'Conexión con Mentores', 
       descripcion: 'Encuentra expertos apasionados en diversas áreas que te guiarán paso a paso para dominar nuevas habilidades, desde música hasta tecnología.', 
-      icono: 'https://via.placeholder.com/50?text=Mentor'
+      icono: 'https://via.placeholder.com/60?text=Mentor'
     },
     { 
       titulo: 'Publicación de Habilidades', 
       descripcion: 'Comparte tu experiencia y conocimientos con la comunidad. Publica tus habilidades y conviértete en mentor para ayudar a otros a crecer.', 
-      icono: 'https://via.placeholder.com/50?text=Share'
+      icono: 'https://via.placeholder.com/60?text=Share'
     }
   ];
 
@@ -155,23 +155,23 @@ const Inicio: React.FC = () => {
             ))}
           </IonRow>
 
-          {/* Sección de Servicios reducida */}
+          {/* Sección de Servicios mejorada */}
           <IonRow>
             <IonCol>
               <h2 className="services-title">Nuestros Servicios</h2>
             </IonCol>
           </IonRow>
-          <IonRow>
+          <IonRow className="services-row">
             {servicios.map((servicio, index) => (
-              <IonCol size="12" sizeMd="6" key={index}>
+              <IonCol size="12" sizeMd="6" key={index} className="service-col">
                 <IonCard className="service-card">
-                  <IonCardHeader>
+                  <IonCardHeader className="service-header">
                     {servicio.icono && (
-                      <IonImg src={servicio.icono} alt={servicio.titulo} style={{ width: '50px', height: '50px', marginBottom: '10px' }} />
+                      <IonImg src={servicio.icono} alt={servicio.titulo} className="service-icon" />
                     )}
-                    <IonCardTitle>{servicio.titulo}</IonCardTitle>
+                    <IonCardTitle className="service-title">{servicio.titulo}</IonCardTitle>
                   </IonCardHeader>
-                  <IonCardContent>
+                  <IonCardContent className="service-content">
                     <IonText>{servicio.descripcion}</IonText>
                   </IonCardContent>
                 </IonCard>
@@ -180,6 +180,46 @@ const Inicio: React.FC = () => {
           </IonRow>
         </IonGrid>
       </IonContent>
+
+      {/* Footer */}
+      <IonFooter className="footer">
+        <IonToolbar className="footer-toolbar">
+          <IonGrid>
+            <IonRow>
+              <IonCol size="12" sizeMd="4" className="footer-col">
+                <IonText>
+                  <h3>Habilix</h3>
+                  <p>Conecta, aprende y comparte habilidades con la comunidad.</p>
+                </IonText>
+              </IonCol>
+              <IonCol size="12" sizeMd="4" className="footer-col">
+                <IonText>
+                  <h3>Enlaces</h3>
+                  <ul>
+                    <li><a href="/Cursos">Explorar Habilidades</a></li>
+                    <li><a href="/Login">Publicar Habilidad</a></li>
+                    <li><a href="/Contacto">Contacto</a></li>
+                  </ul>
+                </IonText>
+              </IonCol>
+              <IonCol size="12" sizeMd="4" className="footer-col">
+                <IonText>
+                  <h3>Contacto</h3>
+                  <p>Email: soporte@habilix.com</p>
+                  <p>Teléfono: +1 234 567 890</p>
+                </IonText>
+              </IonCol>
+            </IonRow>
+            <IonRow className="footer-bottom">
+              <IonCol>
+                <IonText>
+                  <p>© 2025 Habilix. Todos los derechos reservados.</p>
+                </IonText>
+              </IonCol>
+            </IonRow>
+          </IonGrid>
+        </IonToolbar>
+      </IonFooter>
     </IonPage>
   );
 };

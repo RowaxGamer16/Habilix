@@ -131,7 +131,7 @@ const App: React.FC = () => {
               <IonGrid>
                 <IonRow>
                   <IonCol size="12" size-md="4" className="ion-text-start">
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ display: 'flex-end', alignItems: 'center' }}>
                       <IonImg src="/Habilix.jpg" alt="Logo Habilix" style={{ width: '60px', height: 'auto', marginRight: '10px' }} />
                       <IonText>
                         <h4>Habilix</h4>
