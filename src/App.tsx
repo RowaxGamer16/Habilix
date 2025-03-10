@@ -45,6 +45,7 @@ import '@ionic/react/css/text-alignment.css';
 import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
+
 setupIonicReact();
 
 const App: React.FC = () => {
@@ -88,7 +89,7 @@ const App: React.FC = () => {
               {!isLoggedIn ? (
                 <IonItem button routerLink="/Login">
                   <IonIcon icon={logIn} slot="start" />
-                  <IonLabel>Login / Registro</IonLabel>
+                  <IonLabel>Registro</IonLabel>
                 </IonItem>
               ) : (
                 <IonItem button routerLink="/Perfil">
@@ -104,10 +105,10 @@ const App: React.FC = () => {
         <div className="app-container">
           <IonHeader>
             <IonToolbar>
-              <IonButtons slot="start">
+              <IonButtons slot="end"> {/* Coloca el menú hamburguesa a la derecha */}
                 <IonMenuButton autoHide={false} />
               </IonButtons>
-              <IonTitle>Habilix</IonTitle>
+              <IonTitle style={{ textAlign: 'left', flex: 1 }}>Habilix</IonTitle> {/* Alinear Habilix a la izquierda */}
             </IonToolbar>
           </IonHeader>
 
@@ -131,7 +132,7 @@ const App: React.FC = () => {
               <IonGrid>
                 <IonRow>
                   <IonCol size="12" size-md="4" className="ion-text-start">
-                    <div style={{ display: 'flex-end', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
                       <IonImg src="/Habilix.jpg" alt="Logo Habilix" style={{ width: '60px', height: 'auto', marginRight: '10px' }} />
                       <IonText>
                         <h4>Habilix</h4>
