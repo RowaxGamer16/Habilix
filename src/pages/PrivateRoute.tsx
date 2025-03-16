@@ -8,6 +8,8 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ component: Component, isLoggedIn, ...rest }) => {
+  console.log("Accediendo a ruta privada, isLoggedIn:", isLoggedIn); // Depuración
+
   return (
     <Route
       {...rest}

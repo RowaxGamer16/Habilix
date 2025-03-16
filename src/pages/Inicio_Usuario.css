@@ -1,0 +1,62 @@
+/* Estilos generales */
+ion-page {
+    background-color: #f9f9f9;
+  }
+  
+  /* Estilo para el header */
+  ion-header {
+    background-color: #3880ff;
+    color: white;
+  }
+  
+  ion-toolbar {
+    padding: 10px;
+  }
+  
+  ion-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  /* Contenido principal */
+  ion-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  
+  h2 {
+    font-size: 1.8rem;
+    color: #333;
+    text-align: center;
+  }
+  
+  p {
+    font-size: 1.2rem;
+    color: #555;
+    text-align: center;
+    margin-top: 10px;
+  }
+  
+  /* Estilos para el spinner */
+  ion-spinner {
+    margin-top: 20px;
+  }
+  
+  /* Estilo para mostrar errores */
+  div > h2 {
+    color: red;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  /* Estilo para los mensajes de éxito */
+  strong {
+    color: #3880ff;
+    font-weight: bold;
+  }
+  

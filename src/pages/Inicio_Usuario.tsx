@@ -11,22 +11,25 @@ import {
 
 const Inicio_Usuario: React.FC = () => {
   const [userName, setUserName] = useState<string>('');
+  const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchUserName = async () => {
+    const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('token'); // Obtener token
-        const userId = localStorage.getItem('user_id'); // Obtener ID del usuario
+        const storedUserId = localStorage.getItem('userId'); // Obtener ID del usuario
 
-        if (!token || !userId) {
+        if (!token || !storedUserId) {
           setError('Faltan credenciales');
           setIsLoading(false);
           return;
         }
 
-        const response = await fetch(`http://localhost:5000/api/usuario?id=${userId}`, {
+        setUserId(storedUserId); // Guardar el ID en el estado
+
+        const response = await fetch(`http://localhost:5000/api/usuario/${storedUserId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -39,15 +42,23 @@ const Inicio_Usuario: React.FC = () => {
         }
 
         const data = await response.json();
-        setUserName(data.nombre); // Guardar el nombre del usuario
+        console.log('Datos del usuario:', data); // Verifica la respuesta del backend
+
+        // Asegúrate de que el backend devuelva el nombre en la propiedad correcta
+        if (data.nombre_usuario) {
+          setUserName(data.nombre_usuario); // Guardar el nombre del usuario
+        } else {
+          setError('Nombre de usuario no encontrado en la respuesta');
+        }
+
         setIsLoading(false); // Dejar de mostrar el spinner
       } catch (error) {
-        setError('Error al obtener el nombre del usuario');
+        setError('Error al obtener los datos del usuario');
         setIsLoading(false);
       }
     };
 
-    fetchUserName();
+    fetchUserData();
   }, []);
 
   return (
@@ -57,7 +68,7 @@ const Inicio_Usuario: React.FC = () => {
           <IonTitle>Bienvenido al inicio de usuario</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <IonContent className="ion-padding">
         {isLoading ? (
           <IonSpinner name="crescent" />
         ) : error ? (
@@ -66,7 +77,8 @@ const Inicio_Usuario: React.FC = () => {
           </div>
         ) : (
           <div>
-            <h2>¡Hola, {userName || 'usuario'}!</h2>
+            <h2>¡Hola, {userName}!</h2>
+            <p>Tu ID de usuario es: <strong>{userId}</strong></p>
             <p>Bienvenido a tu panel.</p>
           </div>
         )}
