@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Redirect, Route } from 'react-router-dom';
 import './App.css';
+import { logoFacebook, logoTwitter, logoLinkedin, logoGoogle, logoInstagram, call, mail, location } from 'ionicons/icons';
 import {
   IonApp,
   IonIcon,
@@ -64,37 +65,125 @@ const App: React.FC = () => {
         {/* Menú lateral */}
         <IonMenu side="start" menuId="mainMenu" contentId="mainContent">
           <IonHeader>
-            <IonToolbar>
-              <IonImg src="/Habilix.jpg" alt="Logo" style={{ width: '90px', height: 'auto', margin: '10px' }} />
+            <IonToolbar className="custom-toolbar">
+              <IonImg
+                src="/Habilix.jpg"
+                alt="Logo"
+                style={{
+                  width: '90px',
+                  height: 'auto',
+                  margin: '10px auto',
+                  display: 'block',
+                  borderRadius: '10px',
+                }}
+              />
+              <IonTitle style={{ textAlign: 'center', color: '#050530', fontSize: '1.2em' }}>
+                Habilix
+              </IonTitle>
             </IonToolbar>
           </IonHeader>
-          <IonContent>
-            <IonList>
-              <IonItem button routerLink={isLoggedIn ? "/Inicio_Usuario" : "/Inicio"}>
-                <IonIcon icon={home} slot="start" />
-                <IonLabel>{isLoggedIn ? 'Inicio Usuario' : 'Inicio'}</IonLabel>
+          <IonContent style={{ background: '#CAE9FF' }}> {/* Fondo claro */}
+            <IonList lines="none" style={{ padding: '10px' }}>
+              {/* Ítem de Inicio */}
+              <IonItem
+                button
+                routerLink={isLoggedIn ? "/Inicio_Usuario" : "/Inicio"}
+                className="menu-item"
+                style={{
+                  margin: '10px 0',
+                  borderRadius: '10px',
+                  background: '#050530', /* Fondo blanco */
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', /* Sombra suave */
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <IonIcon icon={home} slot="start" style={{ color: '#050530' }} />
+                <IonLabel style={{ color: '#050530', fontWeight: '500' }}>{isLoggedIn ? 'Inicio Usuario' : 'Inicio'}</IonLabel>
               </IonItem>
-              <IonItem button routerLink="/Cursos">
-                <IonIcon icon={school} slot="start" />
-                <IonLabel>Cursos</IonLabel>
+
+              {/* Ítem de Cursos */}
+              <IonItem
+                button
+                routerLink="/Cursos"
+                className="menu-item"
+                style={{
+                  margin: '10px 0',
+                  borderRadius: '10px',
+                  background: '#050530', /* Fondo blanco */
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', /* Sombra suave */
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <IonIcon icon={school} slot="start" style={{ color: '#050530' }} />
+                <IonLabel style={{ color: '#050530', fontWeight: '500' }}>Cursos</IonLabel>
               </IonItem>
-              <IonItem button routerLink="/Contactos">
-                <IonIcon icon={people} slot="start" />
-                <IonLabel>Contactos</IonLabel>
+
+              {/* Ítem de Contactos */}
+              <IonItem
+                button
+                routerLink="/Contactos"
+                className="menu-item"
+                style={{
+                  margin: '10px 0',
+                  borderRadius: '10px',
+                  background: '#050530', /* Fondo blanco */
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', /* Sombra suave */
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <IonIcon icon={people} slot="start" style={{ color: '#050530' }} />
+                <IonLabel style={{ color: '#050530', fontWeight: '500' }}>Contactos</IonLabel>
               </IonItem>
-              <IonItem button routerLink="/Ayuda">
-                <IonIcon icon={helpCircle} slot="start" />
-                <IonLabel>Ayuda</IonLabel>
+
+              {/* Ítem de Ayuda */}
+              <IonItem
+                button
+                routerLink="/Ayuda"
+                className="menu-item"
+                style={{
+                  margin: '10px 0',
+                  borderRadius: '10px',
+                  background: '#050530', /* Fondo blanco */
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', /* Sombra suave */
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <IonIcon icon={helpCircle} slot="start" style={{ color: '#050530' }} />
+                <IonLabel style={{ color: '#050530', fontWeight: '500' }}>Ayuda</IonLabel>
               </IonItem>
+
+              {/* Ítem de Registro o Perfil */}
               {!isLoggedIn ? (
-                <IonItem button routerLink="/Login">
-                  <IonIcon icon={logIn} slot="start" />
-                  <IonLabel>Registro</IonLabel>
+                <IonItem
+                  button
+                  routerLink="/Login"
+                  className="menu-item"
+                  style={{
+                    margin: '10px 0',
+                    borderRadius: '10px',
+                    background: '#050530', /* Color de acento */
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', /* Sombra suave */
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <IonIcon icon={logIn} slot="start" style={{ color: '#050530' }} />
+                  <IonLabel style={{ color: '#050530', fontWeight: '500' }}>Registro</IonLabel>
                 </IonItem>
               ) : (
-                <IonItem button routerLink="/Perfil">
-                  <IonIcon icon={personCircle} slot="start" />
-                  <IonLabel>Perfil</IonLabel>
+                <IonItem
+                  button
+                  routerLink="/Perfil"
+                  className="menu-item"
+                  style={{
+                    margin: '10px 0',
+                    borderRadius: '10px',
+                    background: '#050530', /* Color de acento */
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', /* Sombra suave */
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <IonIcon icon={personCircle} slot="start" style={{ color: '#FFFFFF' }} />
+                  <IonLabel style={{ color: '#FFFFFF', fontWeight: '500' }}>Perfil</IonLabel>
                 </IonItem>
               )}
             </IonList>
@@ -104,11 +193,11 @@ const App: React.FC = () => {
         {/* Contenedor principal */}
         <div className="app-container">
           <IonHeader>
-            <IonToolbar>
-              <IonButtons slot="end"> {/* Coloca el menú hamburguesa a la derecha */}
+            <IonToolbar color="primary">
+              <IonButtons slot="end">
                 <IonMenuButton autoHide={false} />
               </IonButtons>
-              <IonTitle style={{ textAlign: 'left', flex: 1 }}>Habilix</IonTitle> {/* Alinear Habilix a la izquierda */}
+              <IonTitle style={{ textAlign: 'left', flex: 1 }}>Habilix</IonTitle>
             </IonToolbar>
           </IonHeader>
 
@@ -127,36 +216,29 @@ const App: React.FC = () => {
             </IonRouterOutlet>
           </IonContent>
 
-          <IonFooter>
-            <IonToolbar>
-              <IonGrid>
-                <IonRow>
-                  <IonCol size="12" size-md="4" className="ion-text-start">
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <IonImg src="/Habilix.jpg" alt="Logo Habilix" style={{ width: '60px', height: 'auto', marginRight: '10px' }} />
-                      <IonText>
-                        <h4>Habilix</h4>
-                      </IonText>
-                    </div>
-                  </IonCol>
-                  <IonCol size="12" size-md="4" className="ion-text-center">
-                    <IonText color="medium">© 2025 Derechos reservados.</IonText>
-                  </IonCol>
-                  <IonCol size="12" size-md="4" className="ion-text-end">
-                    <IonText>Redes Sociales:</IonText>
-                    <IonButton href="https://facebook.com" fill="clear">
-                      <IonImg src="/Facebook.png" alt="Facebook" style={{ width: '24px' }} />
-                    </IonButton>
-                    <IonButton href="https://instagram.com" fill="clear">
-                      <IonImg src="/Instagram.jpeg" alt="Instagram" style={{ width: '24px' }} />
-                    </IonButton>
-                    <IonButton href="https://twitter.com" fill="clear">
-                      <IonImg src="/Twitter.jpeg" alt="Twitter" style={{ width: '24px' }} />
-                    </IonButton>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            </IonToolbar>
+          <IonFooter className="footer" style={{ padding: '5px 0' }}>
+            <IonGrid>
+              <IonRow className="footer-content">
+                {/* Contacto */}
+                <IonCol size="4" className="footer-contact" style={{ fontSize: '12px' }}>
+                  <p><IonIcon icon={location} /> Santo Domingo, Repùblica Dominicana</p>
+                  <p><IonIcon icon={call} /> (+1) 809 514 9661</p>
+                  <p><IonIcon icon={mail} /> habilixcorporation@gmail.com</p>
+                </IonCol>
+
+                {/* Redes sociales */}
+                <IonCol size="4" className="footer-icons" style={{ fontSize: '14px' }}>
+                  <IonIcon icon={logoFacebook} style={{ margin: '0 5px' }} />
+                  <IonIcon icon={logoTwitter} style={{ margin: '0 5px' }} />
+                  <IonIcon icon={logoInstagram} style={{ margin: '0 5px' }} />
+                </IonCol>
+
+                {/* Derechos reservados */}
+                <IonCol size="4" className="footer-text" style={{ fontSize: '12px' }}>
+                  <IonText>Habilix &copy; 2025</IonText>
+                </IonCol>
+              </IonRow>
+            </IonGrid>
           </IonFooter>
         </div>
       </IonReactRouter>

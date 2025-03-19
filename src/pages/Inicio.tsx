@@ -60,15 +60,15 @@ const Inicio: React.FC = () => {
 
   // Servicios
   const servicios: Servicio[] = [
-    { 
-      titulo: 'Conexión con Mentores', 
-      descripcion: 'Encuentra expertos apasionados en diversas áreas que te guiarán paso a paso para dominar nuevas habilidades, desde música hasta tecnología.', 
-      icono: 'https://via.placeholder.com/60?text=Mentor'
+    {
+      titulo: 'Conexión con Mentores',
+      descripcion: 'Encuentra expertos apasionados en diversas áreas que te guiarán paso a paso para dominar nuevas habilidades, desde música hasta tecnología.',
+      icono: '/mentor.png' // Ruta desde la carpeta public
     },
-    { 
-      titulo: 'Publicación de Habilidades', 
-      descripcion: 'Comparte tu experiencia y conocimientos con la comunidad. Publica tus habilidades y conviértete en mentor para ayudar a otros a crecer.', 
-      icono: 'https://via.placeholder.com/60?text=Share'
+    {
+      titulo: 'Publicación de Habilidades',
+      descripcion: 'Comparte tu experiencia y conocimientos con la comunidad. Publica tus habilidades y conviértete en mentor para ayudar a otros a crecer.',
+      icono: '/share.png' // Ruta desde la carpeta public
     }
   ];
 
@@ -95,7 +95,12 @@ const Inicio: React.FC = () => {
           <IonRow className="button-row">
             {botones.map((boton, index) => (
               <IonCol size="auto" key={index}>
-                <IonButton expand="block" color={boton.color} routerLink={boton.link}>
+                <IonButton
+                  expand="block"
+                  color={boton.color === 'primary' ? 'moonstone' : 'picton-blue'} // Usa los nombres de los colores definidos
+                  routerLink={boton.link}
+                  style={{ fontWeight: '500' }}
+                >
                   {boton.texto}
                 </IonButton>
               </IonCol>
@@ -111,7 +116,7 @@ const Inicio: React.FC = () => {
           <IonRow>
             {habilidadesDestacadas.map((habilidad, index) => (
               <IonCol size="12" sizeMd="6" key={index}>
-                <IonCard>
+                <IonCard className="highlight-card">
                   <IonCardHeader>
                     <IonCardTitle>{habilidad.titulo}</IonCardTitle>
                   </IonCardHeader>
@@ -128,7 +133,7 @@ const Inicio: React.FC = () => {
             <IonCol>
               <h2 className="testimonials-title">Comentarios</h2>
               {testimonios.map((testimonio, index) => (
-                <IonCard key={index}>
+                <IonCard key={index} className="testimonials-card">
                   <IonCardHeader>
                     <IonCardTitle>{testimonio.nombre}</IonCardTitle>
                     <IonCardSubtitle>{testimonio.habilidad}</IonCardSubtitle>
@@ -148,9 +153,13 @@ const Inicio: React.FC = () => {
             </IonCol>
           </IonRow>
           <IonRow>
-            {[1, 2, 3].map((_, index) => (
+            {[
+              '/imagen1.jpg',
+              '/imagen2.jpg',
+              '/imagen3.jpg'
+            ].map((imagen, index) => (
               <IonCol size="12" sizeMd="4" key={index}>
-                <IonImg src={`https://via.placeholder.com/300`} />
+                <IonImg src={imagen} className="gallery-image" />
               </IonCol>
             ))}
           </IonRow>
@@ -180,46 +189,6 @@ const Inicio: React.FC = () => {
           </IonRow>
         </IonGrid>
       </IonContent>
-
-      {/* Footer */}
-      <IonFooter className="footer">
-        <IonToolbar className="footer-toolbar">
-          <IonGrid>
-            <IonRow>
-              <IonCol size="12" sizeMd="4" className="footer-col">
-                <IonText>
-                  <h3>Habilix</h3>
-                  <p>Conecta, aprende y comparte habilidades con la comunidad.</p>
-                </IonText>
-              </IonCol>
-              <IonCol size="12" sizeMd="4" className="footer-col">
-                <IonText>
-                  <h3>Enlaces</h3>
-                  <ul>
-                    <li><a href="/Cursos">Explorar Habilidades</a></li>
-                    <li><a href="/Login">Publicar Habilidad</a></li>
-                    <li><a href="/Contacto">Contacto</a></li>
-                  </ul>
-                </IonText>
-              </IonCol>
-              <IonCol size="12" sizeMd="4" className="footer-col">
-                <IonText>
-                  <h3>Contacto</h3>
-                  <p>Email: soporte@habilix.com</p>
-                  <p>Teléfono: +1 234 567 890</p>
-                </IonText>
-              </IonCol>
-            </IonRow>
-            <IonRow className="footer-bottom">
-              <IonCol>
-                <IonText>
-                  <p>© 2025 Habilix. Todos los derechos reservados.</p>
-                </IonText>
-              </IonCol>
-            </IonRow>
-          </IonGrid>
-        </IonToolbar>
-      </IonFooter>
     </IonPage>
   );
 };

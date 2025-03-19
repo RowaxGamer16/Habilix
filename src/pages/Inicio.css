@@ -1,8 +1,16 @@
+:root {
+  --mint-green: #bee9e8ff;
+  --moonstone: #62b6cbff;
+  --indigo-dye: #1b4965ff;
+  --columbia-blue: #cae9ffff;
+  --picton-blue: #5fa8d3ff;
+}
+
 /* Configuración básica de la página */
 body {
   font-family: 'Arial', sans-serif;
-  background-color: #f4f7fc;
-  color: #333;
+  background-color: var(--mint-green);
+  color: var(--indigo-dye);
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -17,15 +25,15 @@ body {
   animation: fadeIn 1.5s ease-out;
   max-width: auto;
   margin: 0 auto;
-  min-height: 100vh; /* Asegura que el contenido ocupe al menos toda la altura de la ventana */
-  box-sizing: border-box; /* Incluye padding en el cálculo del alto */
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 /* Título principal */
 .welcome-title {
   font-size: 3rem;
   font-weight: bold;
-  color: #000000;
+  color: var(--indigo-dye);
   text-align: center;
   margin: 20px 0 10px 0;
   animation: fadeInUp 1s ease-out;
@@ -34,7 +42,7 @@ body {
 .welcome-description {
   font-size: 1.2rem;
   text-align: center;
-  color: #ffffff;
+  color: var(--indigo-dye);
   margin-bottom: 40px;
   animation: fadeInUp 1s ease-out;
 }
@@ -54,7 +62,8 @@ button {
   padding: 12px 25px;
   border-radius: 25px;
   transition: all 0.3s ease;
-  cursor: pointer;
+  cursor: pointer;  
+  background-color: var(--mint-green);
 }
 
 button:hover {
@@ -62,23 +71,11 @@ button:hover {
   box-shadow: 0px 6px 25px rgba(0, 0, 0, 0.2);
 }
 
-.primary {
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-}
-
-.secondary {
-  background-color: #50e3c2;
-  color: white;
-  border: none;
-}
-
 /* Sección de Habilidades Destacadas */
 .featured-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #000000;
+  color: var(--indigo-dye);
   text-align: center;
   margin: 20px 0 30px 0;
   animation: fadeInUp 1.5s ease-out;
@@ -102,20 +99,20 @@ button:hover {
 }
 
 .IonCardHeader {
-  background-color: #f1f8ff;
+  background-color: var(--mint-green);
   padding: 15px;
   text-align: center;
   transition: background-color 0.3s ease;
 }
 
 .IonCardHeader:hover {
-  background-color: #dfe9fc;
+  background-color: var(--moonstone);
 }
 
 .IonCardTitle {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #4a90e2;
+  color: var(--indigo-dye);
   text-align: center;
 }
 
@@ -129,7 +126,7 @@ button:hover {
 .testimonials-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--indigo-dye);
   text-align: center;
   margin: 20px 0 30px 0;
   animation: fadeInUp 1.5s ease-out;
@@ -146,7 +143,7 @@ button:hover {
 .gallery-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #4a90e2;
+  color: var(--indigo-dye);
   text-align: center;
   margin: 40px 0 20px 0;
   animation: fadeInUp 2s ease-out;
@@ -172,7 +169,7 @@ button:hover {
 .services-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #4a90e2;
+  color: var(--indigo-dye);
   text-align: center;
   margin: 40px 0 20px 0;
   animation: fadeInUp 2s ease-out;
@@ -185,7 +182,7 @@ button:hover {
   gap: 30px;
   flex-wrap: nowrap;
   padding: 0 20px;
-  margin-bottom: 0; /* Eliminé el margen inferior para evitar espacio en blanco */
+  margin-bottom: 0;
 }
 
 .service-col {
@@ -197,7 +194,7 @@ button:hover {
 
 .service-card {
   border-radius: 20px;
-  background: linear-gradient(135deg, #ffffff 0%, #f1f8ff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, var(--mint-green) 100%);
   box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   width: 900px;
@@ -238,7 +235,7 @@ button:hover {
 .service-title {
   font-size: 1.6rem;
   font-weight: 600;
-  color: #4a90e2;
+  color: var(--indigo-dye);
   margin: 0;
   text-align: center;
 }
@@ -253,10 +250,10 @@ button:hover {
 
 /* Footer */
 .footer {
-  background: linear-gradient(135deg, #4a90e2 0%, #50e3c2 100%);
+  background: linear-gradient(135deg, var(--moonstone) 0%, var(--picton-blue) 100%);
   color: white;
   padding: 20px 0;
-  margin-top: 0; /* Eliminé el margen superior para evitar espacio en blanco */
+  margin-top: 0;
   position: relative;
   overflow: hidden;
 }
@@ -276,7 +273,8 @@ button:hover {
   color: #fff;
 }
 
-.footer-col p, .footer-col ul {
+.footer-col p,
+.footer-col ul {
   font-size: 1rem;
   color: #f1f8ff;
 }
@@ -319,6 +317,7 @@ button:hover {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -329,6 +328,7 @@ button:hover {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
