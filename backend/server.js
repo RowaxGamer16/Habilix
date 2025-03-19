@@ -135,32 +135,6 @@ app.post('/api/register', [
     }
 });
 
-// Ruta para obtener los datos del usuario por ID
-app.get('/api/usuario/:id', validateToken, async (req, res) => {
-    const userId = req.params.id;
-
-    try {
-        // Obtener el usuario de la base de datos
-        const [results] = await db.promise().query('SELECT * FROM usuarios WHERE ID = ?', [userId]);
-
-        if (results.length === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-
-        const user = results[0];
-
-        // Responder con los datos del usuario
-        res.json({
-            id: user.ID,
-            nombre: user.NOMBRE_USUARIO,
-            email: user.EMAIL,
-            role: user.ROLE,
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error del servidor' });
-    }
-});
 
 app.get('/api/usuario/:id', validateToken, async (req, res) => {
     const userId = req.params.id;
@@ -189,6 +163,115 @@ app.get('/api/usuario/:id', validateToken, async (req, res) => {
 });
 
 
+
+const express = require('express');
+const router = express.Router();
+
+// Obtener todos los cursos
+router.get('/cursos', (req, res) => {
+    db.query('SELECT * FROM cursos', (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
+// Obtener un curso por ID
+router.get('/cursos/:id', (req, res) => {
+    const cursoId = req.params.id;
+    db.query('SELECT * FROM cursos WHERE Id = ?', [cursoId], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Curso no encontrado' });
+        }
+        res.json(results[0]);
+    });
+});
+
+// Crear un nuevo curso
+router.post('/cursos', (req, res) => {
+    const { nombre, descripcion, portada, indico, imagenes_materiales, ranking, opiniones } = req.body;
+    db.query(
+        'INSERT INTO cursos (nombre, descripcion, portada, indico, imagenes_materiales, ranking, opiniones) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [nombre, descripcion, portada, indico, imagenes_materiales, ranking, opiniones],
+        (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.status(201).json({ id: results.insertId });
+        }
+    );
+});
+
+// Actualizar un curso
+router.put('/cursos/:id', (req, res) => {
+    const cursoId = req.params.id;
+    const { nombre, descripcion, portada, indico, imagenes_materiales, ranking, opiniones } = req.body;
+    db.query(
+        'UPDATE cursos SET nombre = ?, descripcion = ?, portada = ?, indico = ?, imagenes_materiales = ?, ranking = ?, opiniones = ? WHERE Id = ?',
+        [nombre, descripcion, portada, indico, imagenes_materiales, ranking, opiniones, cursoId],
+        (err, results) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ message: 'Curso actualizado correctamente' });
+        }
+    );
+});
+
+// Eliminar un curso
+router.delete('/cursos/:id', (req, res) => {
+    const cursoId = req.params.id;
+    db.query('DELETE FROM cursos WHERE Id = ?', [cursoId], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ message: 'Curso eliminado correctamente' });
+    });
+});
+
+module.exports = router;
+
+const express = require('express');
+const cursosRouter = require('./routes/cursos'); // Asegúrate de que la ruta sea correcta
+
+app.use(express.json());
+
+app.use('/api', cursosRouter);
+
+
+const express = require('express');
+
+const db = require('../config/db'); // Asegúrate de que la conexión a la base de datos esté configurada
+
+// Obtener todos los cursos (requiere autenticación)
+router.get('/cursos', (req, res) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Acceso denegado, no se proporcionó token' });
+    }
+
+    // Verificar el token (puedes usar un middleware como `validateToken`)
+    jwt.verify(token, process.env.JWT_SECRET || 'token', async (err, decoded) => {
+        if (err) {
+            return res.status(401).json({ error: 'Token inválido' });
+        }
+
+        try {
+            const [results] = await db.promise().query('SELECT * FROM cursos');
+            res.json(results);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Error del servidor' });
+        }
+    });
+});
+
+module.exports = router;
 
 // Iniciar servidor
 const PORT = process.env.PORT || 5000;
