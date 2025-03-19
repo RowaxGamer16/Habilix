@@ -34,7 +34,8 @@ import Ayuda from './pages/Ayuda';
 import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import InicioUsuario from './pages/Inicio_Usuario';
-import PrivateRoute from './pages/PrivateRoute';
+import PrivateRoute from './pages/PrivateRoute'; // Asegúrate de importar el PrivateRoute
+import { UserProvider } from './context/UserContext'; // Importa el UserProvider
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -54,10 +55,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      setIsLoggedIn(true);
-    }
+    setIsLoggedIn(!!token); // Convierte en booleano directo
+    console.log("Usuario logueado:", !!token); // Verifica en la consola
   }, []);
+  
 
   return (
     <IonApp>
@@ -201,20 +202,20 @@ const App: React.FC = () => {
             </IonToolbar>
           </IonHeader>
 
-          <IonContent id="mainContent" className="ion-padding">
-            <IonRouterOutlet>
-              <Route exact path="/Inicio" render={() => (isLoggedIn ? <Redirect to="/Inicio_Usuario" /> : <Inicio />)} />
-              <Route exact path="/Cursos" component={Cursos} />
-              <Route exact path="/Contactos" component={Contactos} />
-              <Route exact path="/Ayuda" component={Ayuda} />
-              <Route exact path="/Login" component={Login} />
-              <PrivateRoute exact path="/Perfil" component={Perfil} isLoggedIn={isLoggedIn} />
-              <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} isLoggedIn={isLoggedIn} />
-              <Route exact path="/">
-                <Redirect to="/Inicio" />
-              </Route>
-            </IonRouterOutlet>
-          </IonContent>
+          <UserProvider>
+            <IonContent id="mainContent" className="ion-padding">
+              <IonRouterOutlet>
+                <Route exact path="/Inicio" render={() => (isLoggedIn ? <Redirect to="/Inicio_Usuario" /> : <Inicio />)} />
+                <Route exact path="/Cursos" component={Cursos} />
+                <Route exact path="/Contactos" component={Contactos} />
+                <Route exact path="/Ayuda" component={Ayuda} />
+                <Route exact path="/Login" component={Login} />
+                <PrivateRoute exact path="/Perfil" component={Perfil} isLoggedIn={isLoggedIn} />
+                <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} isLoggedIn={isLoggedIn} />
+                <Route exact path="/" render={() => <Redirect to={isLoggedIn ? "/Inicio_Usuario" : "/Inicio"} />} />
+              </IonRouterOutlet>
+            </IonContent>
+          </UserProvider>
 
           <IonFooter className="footer" style={{ padding: '5px 0' }}>
             <IonGrid>

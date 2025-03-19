@@ -27,23 +27,22 @@ const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const history = useHistory();
 
+  // Verificar si el usuario ya está autenticado
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-      if (usuario.role === 1) {
-        history.push('/Inicio_Usuario');
-      } else if (usuario.role === 2) {
-        history.push('/Inicio_Admin');
-      }
+      // Redirigir a Inicio_Usuario si ya está autenticado
+      history.push('/Inicio_Usuario');
     }
   }, [history]);
 
+  // Validar el formato del email
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
+  // Manejar el inicio de sesión
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Por favor ingrese su correo y contraseña');
@@ -63,18 +62,24 @@ const Login: React.FC = () => {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) throw new Error(data.error || 'Error al iniciar sesión');
 
+      // Guardar datos en localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      localStorage.setItem('userId', data.usuario.id);
 
-      console.log('Inicio de sesión exitoso, recargando la página...');
-      window.location.href = window.location.href; // Forzar recarga completa
+      // Redirigir a Inicio_Usuario después del login
+      history.push('/Inicio_Usuario');
+
+      // Recargar la página para actualizar el estado
+      window.location.reload();
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || 'Error al iniciar sesión. Verifique sus credenciales');
     }
   };
 
+  // Manejar el registro
   const handleRegister = async () => {
     if (!name || !email || !password) {
       setError('Por favor ingrese todos los campos');
@@ -94,15 +99,20 @@ const Login: React.FC = () => {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) throw new Error(data.error || 'Error en el registro');
 
-      setIsLogin(true);
-      setError('Registro exitoso, ahora puede iniciar sesión');
+      // Guardar datos en localStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      localStorage.setItem('userId', data.usuario.id);
 
-      console.log('Registro exitoso, recargando la página...');
-      window.location.href = window.location.href; // Forzar recarga completa
+      // Redirigir a Inicio_Usuario después del registro
+      history.push('/Inicio_Usuario');
+
+      // Recargar la página para actualizar el estado
+      window.location.reload();
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || 'Error en el registro. Intente nuevamente');
     }
   };
 
