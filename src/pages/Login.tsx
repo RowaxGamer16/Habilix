@@ -67,7 +67,7 @@ const Login: React.FC = () => {
       // Guardar datos en localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      localStorage.setItem('userId', data.usuario.id);
+      localStorage.setItem('userId', data.usuario.ID);  // Asegúrate de usar 'ID' y no 'id' si tu base de datos usa 'ID'
 
       // Redirigir a Inicio_Usuario después del login
       history.push('/Inicio_Usuario');
@@ -104,7 +104,7 @@ const Login: React.FC = () => {
       // Guardar datos en localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      localStorage.setItem('userId', data.usuario.id);
+      localStorage.setItem('userId', data.usuario.ID);  // Asegúrate de usar 'ID' y no 'id' si tu base de datos usa 'ID'
 
       // Redirigir a Inicio_Usuario después del registro
       history.push('/Inicio_Usuario');

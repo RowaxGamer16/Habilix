@@ -183,8 +183,8 @@ const App: React.FC = () => {
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <IonIcon icon={personCircle} slot="start" style={{ color: '#FFFFFF' }} />
-                  <IonLabel style={{ color: '#FFFFFF', fontWeight: '500' }}>Perfil</IonLabel>
+                  <IonIcon icon={personCircle} slot="start" style={{ color: '#050530' }} />
+                  <IonLabel style={{ color: '#050530', fontWeight: '500' }}>Perfil</IonLabel>
                 </IonItem>
               )}
             </IonList>

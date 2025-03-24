@@ -3,6 +3,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcrypt');  // Se agrega bcrypt para cifrar contraseñas
 require('dotenv').config();
 
 const app = express();
@@ -58,13 +59,22 @@ app.post('/api/login', [
     }
     const { email, password } = req.body;
     try {
-        const [results] = await db.promise().query('SELECT * FROM usuarios WHERE EMAIL = ? AND PASSWORD = ?', [email, password]);
+        const [results] = await db.promise().query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
         if (results.length === 0) {
             return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
         }
+
         const user = results[0];
+        const isPasswordValid = await bcrypt.compare(password, user.PASSWORD);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
+        }
+
         const token = jwt.sign({ id: user.ID }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
-        res.json({ token, usuario: { ID: user.ID, NOMBRE_USUARIO: user.NOMBRE_USUARIO, EMAIL: user.EMAIL, ROLE: user.ROLE } });
+        res.json({
+            token,
+            usuario: { ID: user.ID, NOMBRE_USUARIO: user.NOMBRE_USUARIO, EMAIL: user.EMAIL, ROLE: user.ROLE }
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error del servidor' });
@@ -83,14 +93,26 @@ app.post('/api/register', [
     }
     const { nombre_usuario, email, password } = req.body;
     try {
-        const [existingUser] = await db.promise().query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
-        if (existingUser.length > 0) {
+        // Verificar si el correo electrónico ya está registrado
+        const [existingEmail] = await db.promise().query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
+        if (existingEmail.length > 0) {
             return res.status(400).json({ error: 'El correo electrónico ya está registrado' });
         }
+
+        // Verificar si el nombre de usuario ya está registrado
+        const [existingUsername] = await db.promise().query('SELECT * FROM usuarios WHERE NOMBRE_USUARIO = ?', [nombre_usuario]);
+        if (existingUsername.length > 0) {
+            return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
+        }
+
+        // Cifrar la contraseña antes de almacenarla
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const [result] = await db.promise().query(
             'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE) VALUES (?, ?, ?, ?)',
-            [nombre_usuario, email, password, 1]
+            [nombre_usuario, email, hashedPassword, 1]
         );
+
         const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
         res.status(201).json({
             token,
