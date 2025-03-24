@@ -45,8 +45,8 @@ const Inicio_Usuario: React.FC = () => {
         console.log('Datos del usuario:', data); // Verifica la respuesta del backend
 
         // Asegúrate de que el backend devuelva el nombre en la propiedad correcta
-        if (data.nombre_usuario) {
-          setUserName(data.nombre_usuario); // Guardar el nombre del usuario
+        if (data.NOMBRE_USUARIO) {
+          setUserName(data.NOMBRE_USUARIO); // Guardar el nombre del usuario
         } else {
           setError('Nombre de usuario no encontrado en la respuesta');
         }
@@ -78,7 +78,6 @@ const Inicio_Usuario: React.FC = () => {
         ) : (
           <div>
             <h2>¡Hola, {userName}!</h2>
-            <p>Tu ID de usuario es: <strong>{userId}</strong></p>
             <p>Bienvenido a tu panel.</p>
           </div>
         )}
