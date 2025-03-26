@@ -3,7 +3,6 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const bcrypt = require('bcrypt');  // Se agrega bcrypt para cifrar contraseñas
 require('dotenv').config();
 
 const app = express();
@@ -65,8 +64,9 @@ app.post('/api/login', [
         }
 
         const user = results[0];
-        const isPasswordValid = await bcrypt.compare(password, user.PASSWORD);
-        if (!isPasswordValid) {
+
+        // **Ahora se compara en texto plano (⚠️ No recomendado para producción)**
+        if (password !== user.PASSWORD) {
             return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
         }
 
@@ -105,12 +105,10 @@ app.post('/api/register', [
             return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
         }
 
-        // Cifrar la contraseña antes de almacenarla
-        const hashedPassword = await bcrypt.hash(password, 10);
-
+        // **Se almacena la contraseña en texto plano (⚠️ No recomendado para producción)**
         const [result] = await db.promise().query(
             'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE) VALUES (?, ?, ?, ?)',
-            [nombre_usuario, email, hashedPassword, 1]
+            [nombre_usuario, email, password, 1]
         );
 
         const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
