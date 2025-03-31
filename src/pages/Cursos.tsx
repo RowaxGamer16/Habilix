@@ -17,9 +17,9 @@ import {
   IonCol,
   IonIcon,
 } from '@ionic/react';
-import { star, starOutline } from 'ionicons/icons';
-import './Cursos.css';
+import { star, starOutline, people } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
+import './Cursos.css';
 
 const Cursos: React.FC = () => {
   const history = useHistory();
@@ -27,46 +27,82 @@ const Cursos: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [showModalCrearCurso, setShowModalCrearCurso] = useState(false);
   const [selectedCurso, setSelectedCurso] = useState<any>(null);
-  const [comentarios, setComentarios] = useState<{ [id: number]: string[] }>(() => JSON.parse(localStorage.getItem('comentarios') || '{}'));
-  const [ranking, setRanking] = useState<{ [id: number]: number }>(() => JSON.parse(localStorage.getItem('ranking') || '{}'));
-  const [suscripciones, setSuscripciones] = useState<{ [id: number]: boolean }>(() => JSON.parse(localStorage.getItem('suscripciones') || '{}'));
-
+  const [comentarios, setComentarios] = useState<{ [id: number]: string[] }>(() =>
+    JSON.parse(localStorage.getItem('comentarios') || '{}')
+  );
+  const [ranking, setRanking] = useState<{ [id: number]: number }>(() =>
+    JSON.parse(localStorage.getItem('ranking') || '{}')
+  );
+  const [suscripciones, setSuscripciones] = useState<{ [id: number]: boolean }>(() =>
+    JSON.parse(localStorage.getItem('suscripciones') || '{}')
+  );
   const [nuevoComentario, setNuevoComentario] = useState('');
+
   const [nuevoCurso, setNuevoCurso] = useState({
     titulo: '',
     descripcion: '',
     profesor: '',
     entrega: '',
     imagen: '',
+    categoria: '',
+    precio: 0,
+    rating: 0,
+    students: 0
   });
+
   const [cursos, setCursos] = useState<any[]>([
     {
       id: 1,
       titulo: 'Introducción a React',
       descripcion: 'Aprende los fundamentos de React y cómo crear aplicaciones interactivas.',
-      entrega: 'Fecha de entrega: miércoles',
-      horario: '13:00 – Revisión No. 3',
       profesor: 'Jose Rijo',
-      imagen: 'https://via.placeholder.com/150',
+      imagen: 'react.png',
+      categoria: 'Tecnología',
+      precio: 29.99,
+      rating: 4.5,
+      students: 125,
+      entrega: 'Miércoles',
+      horario: '13:00 – Revisión No. 3'
     },
     {
       id: 2,
-      titulo: 'Desarrollo con Python',
-      descripcion: 'Domina Python desde lo básico hasta avanzado, con ejemplos prácticos.',
-      entrega: 'Fecha de entrega: lunes',
-      horario: '10:00 – Clase 4',
+      titulo: 'Fotografía Digital',
+      descripcion: 'Domina los conceptos básicos de fotografía y edición digital.',
       profesor: 'Ana Torres',
-      imagen: 'https://via.placeholder.com/150',
+      imagen: 'fotografia.png',
+      categoria: 'Fotografía',
+      precio: 24.99,
+      rating: 4.8,
+      students: 89,
+      entrega: 'Lunes',
+      horario: '10:00 – Clase 4'
     },
     {
       id: 3,
-      titulo: 'Diseño UX/UI',
-      descripcion: 'Entiende los principios del diseño centrado en el usuario.',
-      entrega: 'Fecha de entrega: viernes',
-      horario: '15:00 – Proyecto final',
+      titulo: 'Cocina Italiana',
+      descripcion: 'Aprende las recetas tradicionales de la cocina italiana.',
       profesor: 'Luis Gómez',
-      imagen: 'https://via.placeholder.com/150',
+      imagen: 'cocina.png',
+      categoria: 'Cocina',
+      precio: 19.99,
+      rating: 4.2,
+      students: 64,
+      entrega: 'Viernes',
+      horario: '15:00 – Proyecto final'
     },
+    {
+      id: 3,
+      titulo: 'Cocina Italiana',
+      descripcion: 'Aprende las recetas tradicionales de la cocina italiana.',
+      profesor: 'Luis Gómez',
+      imagen: 'cocina.png',
+      categoria: 'Cocina',
+      precio: 19.99,
+      rating: 4.2,
+      students: 64,
+      entrega: 'Viernes',
+      horario: '15:00 – Proyecto final'
+    }  
   ]);
 
   const cursosFiltrados = cursos.filter(
@@ -129,12 +165,19 @@ const Cursos: React.FC = () => {
       nuevoCurso.titulo &&
       nuevoCurso.descripcion &&
       nuevoCurso.profesor &&
-      nuevoCurso.entrega &&
-      nuevoCurso.imagen
+      nuevoCurso.categoria
     ) {
       setCursos((prevCursos) => [
         ...prevCursos,
-        { ...nuevoCurso, id: prevCursos.length + 1 },
+        {
+          ...nuevoCurso,
+          id: prevCursos.length + 1,
+          students: 0,
+          rating: 0,
+          entrega: nuevoCurso.entrega || 'Por definir',
+          horario: 'Por definir',
+          imagen: nuevoCurso.imagen || 'https://via.placeholder.com/300x200'
+        },
       ]);
       setNuevoCurso({
         titulo: '',
@@ -142,10 +185,14 @@ const Cursos: React.FC = () => {
         profesor: '',
         entrega: '',
         imagen: '',
+        categoria: '',
+        precio: 0,
+        rating: 0,
+        students: 0
       });
       setShowModalCrearCurso(false);
     } else {
-      alert('Por favor, complete todos los campos');
+      alert('Por favor complete todos los campos requeridos');
     }
   };
 
@@ -156,75 +203,119 @@ const Cursos: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>CURSOS</IonTitle>
+          {isUserLoggedIn && (
+            <IonButton
+              slot="end"
+              onClick={() => setShowModalCrearCurso(true)}
+              style={{ marginRight: '10px' }}
+            >
+              Nuevo Curso
+            </IonButton>
+          )}
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <IonContent className="page-cursos">
         <IonSearchbar
           placeholder="Buscar cursos..."
           value={searchText}
           onIonInput={(e: any) => setSearchText(e.target.value)}
         />
 
-        {isUserLoggedIn && (
-          <IonButton
-            onClick={() => setShowModalCrearCurso(true)}
-            style={{ position: 'absolute', top: '10px', left: '10px' }}
-          >
-            Crear Nuevo Curso
-          </IonButton>
-        )}
-
-        <div className="curso-list">
+        <div className="courses-grid">
           {cursosFiltrados.map((curso) => (
-            <IonCard key={curso.id} className="curso-card">
-              <div className="curso-header">
-                <img src={curso.imagen} alt={curso.titulo} className="curso-imagen" />
-                <div className="curso-info">
-                  <h2>{curso.titulo}</h2>
-                  <p>{curso.profesor}</p>
-                </div>
-              </div>
-              <IonCardContent>
-                <p>{curso.descripcion}</p>
-                <p>{curso.entrega}</p>
-                <p>{curso.horario}</p>
-                <div className="ranking">
-                  {[1, 2, 3, 4, 5].map((estrella) => (
-                    <IonIcon
-                      key={estrella}
-                      icon={estrella <= (ranking[curso.id] || 0) ? star : starOutline}
-                      onClick={() => cambiarRanking(curso.id, estrella)}
-                      style={{ color: 'gold', cursor: 'pointer', fontSize: '20px' }}
-                    />
-                  ))}
-                </div>
-                <IonButton
-                  color="primary"
-                  onClick={() => {
-                    setSelectedCurso(curso);
-                    setShowModal(true);
-                  }}
-                >
-                  Ver Comentarios
-                </IonButton>
-                {suscripciones[curso.id] && isUserLoggedIn ? (
-                  <IonButton
-                    color="success"
-                    onClick={() => alert(`Entraste al curso: ${curso.titulo}`)}
-                  >
-                    Entrar al curso
-                  </IonButton>
-                ) : (
-                  <IonButton color="secondary" onClick={() => toggleSuscripcion(curso.id)}>
-                    Suscribirse
-                  </IonButton>
+            <IonCard key={curso.id} className="course-card">
+              <div className="image-container">
+                <img
+                  src={curso.imagen}
+                  alt={curso.titulo}
+                  className="course-image"
+                />
+                {curso.categoria && (
+                  <span className={`course-badge ${curso.categoria.toLowerCase().replace(/[áéíóú]/g, 'a')}`}>
+                    {curso.categoria}
+                  </span>
                 )}
+              </div>
+
+              <IonCardContent className="course-content">
+                <h2 className="course-title">{curso.titulo}</h2>
+                <p className="course-description">{curso.descripcion}</p>
+
+                <div className="course-meta">
+                  <div className="creator-info">
+                    <span className="creator-avatar">
+                      {curso.profesor?.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="creator-name">{curso.profesor}</span>
+                  </div>
+                  <div className="rating">
+                    <IonIcon icon={star} className="star-icon" />
+                    <span>{curso.rating || 'Nuevo'}</span>
+                  </div>
+                </div>
+
+                <div className="course-meta secondary-meta">
+                  <div className="students">
+                    <IonIcon icon={people} className="people-icon" />
+                    <span>{curso.students}</span>
+                  </div>
+                  <span className="price">${curso.precio.toFixed(2)}</span>
+                </div>
+
+                <div className="course-actions">
+                  <div className="ranking">
+                    {[1, 2, 3, 4, 5].map((estrella) => (
+                      <IonIcon
+                        key={estrella}
+                        icon={estrella <= (ranking[curso.id] || 0) ? star : starOutline}
+                        onClick={() => cambiarRanking(curso.id, estrella)}
+                        className="star-rating"
+                      />
+                    ))}
+                  </div>
+
+                  <IonButton
+                    color="medium"
+                    size="small"
+                    expand="block"
+                    onClick={() => {
+                      setSelectedCurso(curso);
+                      setShowModal(true);
+                    }}
+                    className="comments-button"
+                  >
+                    Ver Comentarios
+                  </IonButton>
+
+                  {suscripciones[curso.id] && isUserLoggedIn ? (
+                    <IonButton
+                      color="success"
+                      expand="block"
+                      size="small"
+                      onClick={() => handleEntrarCurso(curso)}
+                      className="enter-button"
+                    >
+                      Entrar al curso
+                    </IonButton>
+                  ) : (
+                    <IonButton
+                      color="primary"
+                      expand="block"
+                      size="small"
+                      onClick={() => toggleSuscripcion(curso.id)}
+                      className="subscribe-button"
+                    >
+                      Suscribirse
+                    </IonButton>
+                  )}
+                </div>
               </IonCardContent>
             </IonCard>
           ))}
           {cursosFiltrados.length === 0 && <p className="no-results">No se encontraron cursos.</p>}
         </div>
 
+        {/* Modal de comentarios */}
         <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
           <IonHeader>
             <IonToolbar>
@@ -234,41 +325,41 @@ const Cursos: React.FC = () => {
               </IonButton>
             </IonToolbar>
           </IonHeader>
-          <IonContent>
-            <div className="comentarios-list">
-              {comentarios[selectedCurso?.id]?.length ? (
-                comentarios[selectedCurso.id].map((comentario, index) => (
-                  <p key={index}>• {comentario}</p>
-                ))
-              ) : (
-                <p>No hay comentarios aún.</p>
-              )}
-            </div>
+          <IonContent className="modal-container">
+            {comentarios[selectedCurso?.id]?.length ? (
+              comentarios[selectedCurso.id].map((comentario, index) => (
+                <div key={index} className="comment-item">
+                  <p>{comentario}</p>
+                </div>
+              ))
+            ) : (
+              <p className="no-comments">No hay comentarios aún.</p>
+            )}
             <IonTextarea
               placeholder="Escribe tu comentario..."
               value={nuevoComentario}
               onIonInput={(e: any) => setNuevoComentario(e.target.value)}
+              className="comment-input"
             />
           </IonContent>
           <IonFooter>
             <IonToolbar>
               <IonButton
-                expand="full"
-                onClick={() => {
-                  guardarComentario();
-                  setShowModal(false);
-                }}
+                expand="block"
+                onClick={guardarComentario}
+                className="save-comment-button"
               >
-                Guardar Comentarios
+                Guardar Comentario
               </IonButton>
             </IonToolbar>
           </IonFooter>
         </IonModal>
 
+        {/* Modal para crear nuevo curso */}
         <IonModal isOpen={showModalCrearCurso} onDidDismiss={() => setShowModalCrearCurso(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Crear Curso</IonTitle>
+              <IonTitle>Crear Nuevo Curso</IonTitle>
               <IonButton slot="end" onClick={() => setShowModalCrearCurso(false)}>
                 Cerrar
               </IonButton>
@@ -281,7 +372,8 @@ const Cursos: React.FC = () => {
                   <IonTextarea
                     value={nuevoCurso.titulo}
                     onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, titulo: e.target.value })}
-                    placeholder="Título del curso"
+                    placeholder="Título del curso*"
+                    className="form-input"
                   />
                 </IonCol>
               </IonRow>
@@ -290,7 +382,8 @@ const Cursos: React.FC = () => {
                   <IonTextarea
                     value={nuevoCurso.descripcion}
                     onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, descripcion: e.target.value })}
-                    placeholder="Descripción del curso"
+                    placeholder="Descripción*"
+                    className="form-input"
                   />
                 </IonCol>
               </IonRow>
@@ -299,16 +392,28 @@ const Cursos: React.FC = () => {
                   <IonTextarea
                     value={nuevoCurso.profesor}
                     onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, profesor: e.target.value })}
-                    placeholder="Profesor"
+                    placeholder="Instructor*"
+                    className="form-input"
                   />
                 </IonCol>
               </IonRow>
               <IonRow>
                 <IonCol>
                   <IonTextarea
-                    value={nuevoCurso.entrega}
-                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, entrega: e.target.value })}
-                    placeholder="Fecha de entrega"
+                    value={nuevoCurso.categoria}
+                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, categoria: e.target.value })}
+                    placeholder="Categoría* (Tecnología, Fotografía, Cocina, etc.)"
+                    className="form-input"
+                  />
+                </IonCol>
+              </IonRow>
+              <IonRow>
+                <IonCol>
+                  <IonTextarea
+                    value={nuevoCurso.precio.toString()}
+                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, precio: parseFloat(e.target.value) || 0 })}
+                    placeholder="Precio"
+                    className="form-input"
                   />
                 </IonCol>
               </IonRow>
@@ -317,12 +422,19 @@ const Cursos: React.FC = () => {
                   <IonTextarea
                     value={nuevoCurso.imagen}
                     onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, imagen: e.target.value })}
-                    placeholder="URL de la imagen"
+                    placeholder="URL de la imagen (opcional)"
+                    className="form-input"
                   />
                 </IonCol>
               </IonRow>
             </IonGrid>
-            <IonButton expand="full" onClick={agregarCurso}>Agregar Curso</IonButton>
+            <IonButton
+              expand="block"
+              onClick={agregarCurso}
+              className="create-course-button"
+            >
+              Crear Curso
+            </IonButton>
           </IonContent>
         </IonModal>
       </IonContent>

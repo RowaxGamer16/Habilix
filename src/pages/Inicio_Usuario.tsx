@@ -1,21 +1,93 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonPage,
   IonContent,
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonToast,
+  IonButtons,
+  IonButton,
+  IonIcon,
+  IonAvatar,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+  IonCardContent,
+  IonBadge,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonSearchbar,
+  IonSegment,
+  IonSegmentButton,
   IonSpinner,
+  IonToast,
+  IonChip
 } from '@ionic/react';
+import {
+  personCircle,
+  search,
+  star,
+  flame,
+  time,
+  chatbubbles,
+  notifications,
+  settings,
+  school,
+  addCircle,
+  trendingUp,
+  location,
+  calendar,
+  people,
+  videocam,
+  logOut
+} from 'ionicons/icons';
+import { useHistory } from 'react-router-dom';
+import './Inicio_Usuario.css';
+
+type Course = {
+  id: number;
+  title: string;
+  category: string;
+  rating: number;
+  students: number;
+  price?: number;
+  isFree: boolean;
+  creator: string;
+  creatorAvatar: string;
+};
 
 const Inicio_Usuario: React.FC = () => {
+  const [userData, setUserData] = useState({
+    role: 'Instructor',
+    createdCourses: 5,
+    takenCourses: 12,
+    rating: 4.7
+  });
+  const [activeSegment, setActiveSegment] = useState('popular');
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [searchText, setSearchText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [notificationsCount] = useState(2);
+  const history = useHistory();
   const [userName, setUserName] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
-  const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('usuario');
+    history.push('/login');
+  };
+
   useEffect(() => {
+
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('token'); // Obtener token
@@ -58,36 +130,254 @@ const Inicio_Usuario: React.FC = () => {
       }
     };
 
-    fetchUserData();
+    setLoading(true);
+    setTimeout(() => {
+      setCourses([
+        {
+          id: 1,
+          title: 'Fotografía Digital desde Cero',
+          category: 'Fotografía',
+          rating: 4.8,
+          students: 1245,
+          price: 29.99,
+          isFree: false,
+          creator: 'Carlos Méndez',
+          creatorAvatar: 'C'
+        },
+        {
+          id: 2,
+          title: 'Programación React Avanzada',
+          category: 'Tecnología',
+          rating: 4.9,
+          students: 892,
+          isFree: true,
+          creator: 'María García',
+          creatorAvatar: 'M'
+        },
+        {
+          id: 3,
+          title: 'Cocina Italiana Profesional',
+          category: 'Cocina',
+          rating: 4.7,
+          students: 567,
+          price: 39.99,
+          isFree: false,
+          creator: 'Luigi Romano',
+          creatorAvatar: 'L'
+        },
+        {
+          id: 4,
+          title: 'Marketing Digital 2023',
+          category: 'Negocios',
+          rating: 4.6,
+          students: 2103,
+          isFree: true,
+          creator: 'Sofía Ramírez',
+          creatorAvatar: 'S'
+        }
+      ]);
+      setLoading(false);
+    }, 1500);
   }, []);
+
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      course.category.toLowerCase().includes(searchText.toLowerCase());
+    const matchesSegment = activeSegment === 'free' ? course.isFree : true;
+    return matchesSearch && matchesSegment;
+  });
+
+  if (loading) {
+    return (
+      <IonPage>
+        <IonContent className="loading-content">
+          <div className="loading-center">
+            <IonSpinner name="crescent" />
+            <p>Cargando cursos...</p>
+          </div>
+        </IonContent>
+      </IonPage>
+    );
+  }
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Bienvenido al inicio de usuario</IonTitle>
+          <IonSearchbar
+            placeholder="Buscar cursos..."
+            value={searchText}
+            onIonChange={e => setSearchText(e.detail.value!)}
+            animated
+            className="header-search"
+          />
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        {isLoading ? (
-          <IonSpinner name="crescent" />
-        ) : error ? (
-          <div>
-            <h2>{error}</h2>
+
+      <IonContent>
+        <IonCard className="welcome-card">
+          <IonCardHeader>
+            <IonCardSubtitle>Bienvenid@ de vuelta</IonCardSubtitle>
+            {isLoading ? (
+              <IonSpinner name="crescent" />
+            ) : error ? (
+              <div>
+                <h2>{error}</h2>
+              </div>
+            ) : (
+              <IonCardTitle>{userName}</IonCardTitle>
+            )}
+          </IonCardHeader>
+          <IonCardContent>
+            <div className="user-stats">
+              <IonChip color="primary">
+                <IonIcon icon={school} />
+                <IonLabel>{userData.role}</IonLabel>
+              </IonChip>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <IonIcon icon={addCircle} color="primary" />
+                  <span>{userData.createdCourses} cursos creados</span>
+                </div>
+                <div className="stat-item">
+                  <IonIcon icon={videocam} color="secondary" />
+                  <span>{userData.takenCourses} cursos tomados</span>
+                </div>
+                <div className="stat-item">
+                  <IonIcon icon={star} color="warning" />
+                  <span>Rating: {userData.rating}/5.0</span>
+                </div>
+              </div>
+            </div>
+          </IonCardContent>
+        </IonCard>
+
+        <div className="quick-actions">
+          <IonButton expand="block" color="primary" routerLink="/create-course">
+            <IonIcon slot="start" icon={addCircle} />
+            Crear Nuevo Curso
+          </IonButton>
+          <IonButton expand="block" color="medium" fill="outline" onClick={handleLogout}>
+            <IonIcon slot="start" icon={logOut} />
+            Cerrar sesión
+          </IonButton>
+        </div>
+
+        <IonSegment
+          value={activeSegment}
+          onIonChange={e => setActiveSegment(e.detail.value as string)}
+          className="courses-segment"
+        >
+          <IonSegmentButton value="popular">
+            <IonIcon icon={flame} />
+            <IonLabel>Populares</IonLabel>
+          </IonSegmentButton>
+          <IonSegmentButton value="new">
+            <IonIcon icon={time} />
+            <IonLabel>Nuevos</IonLabel>
+          </IonSegmentButton>
+          <IonSegmentButton value="free">
+            <IonIcon icon={star} />
+            <IonLabel>Gratis</IonLabel>
+          </IonSegmentButton>
+        </IonSegment>
+
+        <div className="section-title">
+          <h2>Cursos Disponibles</h2>
+          <IonButton fill="clear" size="small" routerLink="/Cursos">
+            Ver todos
+          </IonButton>
+        </div>
+
+        {filteredCourses.length === 0 ? (
+          <div className="empty-state">
+            <IonIcon icon={search} size="large" />
+            <p>No se encontraron cursos</p>
           </div>
         ) : (
-          <div>
-            <h2>¡Hola, {userName}!</h2>
-            <p>Bienvenido a tu panel.</p>
-          </div>
+          <IonGrid className="courses-grid">
+            <IonRow>
+              {filteredCourses.map(course => (
+                <IonCol size="12" sizeMd="6" sizeLg="4" key={course.id}>
+                  <IonCard className="course-card" routerLink={`/course/${course.id}`}>
+                    <div className={`course-badge ${course.category.toLowerCase()}`}>
+                      {course.category}
+                    </div>
+                    <IonCardHeader>
+                      <IonCardTitle>{course.title}</IonCardTitle>
+                      <IonCardSubtitle>
+                        <IonAvatar className="creator-avatar">
+                          {course.creatorAvatar}
+                        </IonAvatar>
+                        {course.creator}
+                      </IonCardSubtitle>
+                    </IonCardHeader>
+                    <IonCardContent>
+                      <div className="course-meta">
+                        <span className="rating">
+                          <IonIcon icon={star} color="warning" />
+                          {course.rating}
+                        </span>
+                        <span className="students">
+                          <IonIcon icon={people} color="medium" />
+                          {course.students}
+                        </span>
+                        {course.isFree ? (
+                          <IonChip color="success">GRATIS</IonChip>
+                        ) : (
+                          <span className="price">${course.price?.toFixed(2)}</span>
+                        )}
+                      </div>
+                    </IonCardContent>
+                  </IonCard>
+                </IonCol>
+              ))}
+            </IonRow>
+          </IonGrid>
         )}
 
-        {/* Muestra el Toast si hay un error */}
+        <div className="section-title">
+          <h2>Tus Cursos en Progreso</h2>
+          <IonButton fill="clear" size="small" routerLink="/my-courses">
+            Ver todos
+          </IonButton>
+        </div>
+
+        <IonList className="progress-list">
+          <IonItem>
+            <IonAvatar slot="start" className="course-thumbnail">
+              <IonIcon icon={videocam} />
+            </IonAvatar>
+            <IonLabel>
+              <h3>Fotografía Digital</h3>
+              <p>Progreso: 65% • 3/5 lecciones</p>
+              <IonBadge color="primary">En progreso</IonBadge>
+            </IonLabel>
+            <IonButton slot="end" fill="clear" routerLink="/course/1/continue">
+              Continuar
+            </IonButton>
+          </IonItem>
+          <IonItem>
+            <IonAvatar slot="start" className="course-thumbnail">
+              <IonIcon icon={videocam} />
+            </IonAvatar>
+            <IonLabel>
+              <h3>Programación React</h3>
+              <p>Progreso: 30% • 2/10 lecciones</p>
+              <IonBadge color="secondary">Recién empezado</IonBadge>
+            </IonLabel>
+            <IonButton slot="end" fill="clear" routerLink="/course/2/continue">
+              Continuar
+            </IonButton>
+          </IonItem>
+        </IonList>
+
         <IonToast
           isOpen={!!error}
           message={error}
           duration={3000}
           onDidDismiss={() => setError('')}
+          color="danger"
         />
       </IonContent>
     </IonPage>

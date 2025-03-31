@@ -1,105 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+
 :root {
   --mint-green: #bee9e8ff;
   --moonstone: #62b6cbff;
   --indigo-dye: #1b4965ff;
   --columbia-blue: #cae9ffff;
   --picton-blue: #5fa8d3ff;
+  --dark-blue: #050530;
+  --font: "Josefin Sans", sans-serif;
 }
 
 /* Estilos para los ítems del menú */
-.menu-item {
+.app-container .menu-item {
   transition: all 0.3s ease;
 }
 
-.menu-item:hover {
+.app-container .menu-item:hover {
   background-color: var(--mint-green);
-  /* Color de fondo al pasar el mouse */
   transform: translateX(5px);
-  /* Efecto de desplazamiento */
 }
 
-.menu-item:active {
+.app-container .menu-item:active {
   transform: scale(0.98);
-  /* Efecto de escala al hacer clic */
 }
 
 /* Estilos para el encabezado del menú */
-ion-menu ion-header {
+.app-container ion-menu ion-header {
   background: var(--indigo-dye);
-  /* Color principal */
   padding: 10px 0;
 }
 
-ion-menu ion-title {
+.app-container ion-menu ion-title {
   color: var(--columbia-blue);
-  /* Color claro para el texto */
   font-size: 1.2em;
   font-weight: bold;
 }
 
 /* Estilos para el contenido del menú */
-ion-menu ion-content {
+.app-container ion-menu ion-content {
   --background: var(--mint-green);
-  /* Fondo claro */
 }
 
 /* Estilos para los íconos */
-ion-menu ion-icon {
+.app-container ion-menu ion-icon {
   margin-right: 10px;
-  /* Espaciado entre íconos y texto */
 }
 
-.custom-toolbar {
+.app-container .custom-toolbar {
   background: var(--indigo-dye) !important;
-  /* Fondo oscuro */
   padding: 10px 0;
-  /* Espaciado interno */
 }
 
-.custom-toolbar ion-title {
+.app-container .custom-toolbar ion-title {
   color: var(--columbia-blue);
-  /* Color claro para el texto */
   font-size: 1.2em;
   font-weight: bold;
   text-align: center;
-  /* Centrar el texto */
 }
 
-.footer {
-  background-color: var(--indigo-dye);
-  /* Fondo oscuro */
-  color: var(--columbia-blue);
-  /* Texto claro */
+/* Estilos para el footer */
+.app-container .footer {
   text-align: center;
   padding: 5px 0;
   font-size: 12px;
   margin-top: 10px;
   position: relative;
+  background-color: var(--columbia-blue);
 }
 
-.footer-contact p,
-.footer-icons,
-.footer-text {
+.app-container .footer-contact p,
+.app-container .footer-icons,
+.app-container .footer-text {
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 2px 0;
-  /* Reducir el margen entre elementos */
+  font-family: var(--font);
+  color: var(--dark-blue);
 }
 
-.footer-icons ion-icon {
+.app-container .footer-icons ion-icon {
   font-size: 14px;
-  /* Tamaño de íconos más pequeño */
   margin: 0 5px;
-  /* Reducir el margen entre íconos */
   cursor: pointer;
-  color: var(--columbia-blue);
-  /* Color secundario para íconos */
 }
 
-.footer-icons ion-icon:hover {
+.app-container .footer-icons ion-icon:hover {
   color: var(--moonstone);
-  /* Color terciario al pasar el mouse */
 }
 
 /* Estilos para el contenido principal */
@@ -107,4 +94,44 @@ ion-menu ion-icon {
   display: flex;
   flex-direction: column;
   height: 100vh;
+}
+
+.menu-item:hover {
+  background-color: var(--moonstone) !important;
+  color: var(--indigo-dye) !important;
+}
+
+.menu-item:hover ion-icon,
+.menu-item:hover ion-label {
+  color: var(--indigo-dye) !important;
+}
+
+/* Animación de entrada para el menú */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Efecto hover para los ítems del menú */
+.menu-item:hover {
+  background: var(--moonstone) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.menu-item:hover ion-icon,
+.menu-item:hover ion-label {
+  color: var(--indigo-dye) !important;
+}
+
+/* Animación de entrada para los ítems */
+.menu-item {
+  animation: fadeIn 0.5s ease-in-out;
 }
