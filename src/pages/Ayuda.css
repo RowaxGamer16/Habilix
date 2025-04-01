@@ -1,3 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap');
+
+:root {
+  --mint-green: #bee9e8ff;
+  --moonstone: #62b6cbff;
+  --indigo-dye: #1b4965ff;
+  --columbia-blue: #cae9ffff;
+  --picton-blue: #5fa8d3ff;
+  --dark-blue: #050530;
+  --font: "Josefin Sans", sans-serif;
+}
+
 /* Centra todo el contenido dentro de IonContent */
 .content-center {
     display: flex;
