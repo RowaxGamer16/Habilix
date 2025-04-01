@@ -1,0 +1,48 @@
+.table-container {
+    padding: 16px;
+  }
+  
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table-header {
+    font-weight: bold;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 12px 8px;
+  }
+  
+  .table-row {
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .table-row ion-col {
+    padding: 8px;
+    vertical-align: middle;
+  }
+  
+  .error-message {
+    color: #dc3545;
+    padding: 16px;
+    text-align: center;
+  }
+  
+  /* Estilos para botones */
+  ion-button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+  }
+  
+  /* Estilos responsivos */
+  @media (max-width: 768px) {
+    .users-table {
+      font-size: 0.8rem;
+    }
+    
+    .table-header ion-col,
+    .table-row ion-col {
+      padding: 4px;
+    }
+  }
