@@ -10,7 +10,12 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { star, time, people, trophy, flash, school, trendingUp } from 'ionicons/icons';
 import 'swiper/swiper-bundle.css';
 import { Pagination, Navigation, Autoplay, EffectFade } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
 import './Inicio.css';
+
+
 
 // Interfaces
 interface Boton {

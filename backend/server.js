@@ -1,31 +1,23 @@
-const express = require('express');
-const mysql = require('mysql2');
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
-const { body, validationResult } = require('express-validator');
-require('dotenv').config();
+import express from 'express';
+import mysql from 'mysql2/promise';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import { body, validationResult } from 'express-validator';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Configuración de la conexión a la base de datos
-const db = mysql.createPool({
+const db = await mysql.createPool({
     connectionLimit: 10,
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'intercambio_de_abilidades',
-});
-
-// Verificar conexión a la base de datos
-db.getConnection((err, connection) => {
-    if (err) {
-        console.error('❌ Error conectando a la base de datos:', err.message);
-        return;
-    }
-    console.log('✅ Conectado a la base de datos MySQL');
-    connection.release();
 });
 
 // Middleware para validar el token JWT
@@ -36,7 +28,7 @@ const validateToken = async (req, res, next) => {
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
-        const [results] = await db.promise().query('SELECT * FROM usuarios WHERE ID = ?', [decoded.id]);
+        const [results] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [decoded.id]);
         if (results.length === 0) {
             return res.status(401).json({ error: 'Usuario no encontrado en la base de datos' });
         }
@@ -58,18 +50,11 @@ app.post('/api/login', [
     }
     const { email, password } = req.body;
     try {
-        const [results] = await db.promise().query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
-        if (results.length === 0) {
+        const [results] = await db.query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
+        if (results.length === 0 || results[0].PASSWORD !== password) {
             return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
         }
-
         const user = results[0];
-
-        // **Ahora se compara en texto plano (⚠️ No recomendado para producción)**
-        if (password !== user.PASSWORD) {
-            return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
-        }
-
         const token = jwt.sign({ id: user.ID }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
         res.json({
             token,
@@ -93,24 +78,18 @@ app.post('/api/register', [
     }
     const { nombre_usuario, email, password } = req.body;
     try {
-        // Verificar si el correo electrónico ya está registrado
-        const [existingEmail] = await db.promise().query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
+        const [existingEmail] = await db.query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
         if (existingEmail.length > 0) {
             return res.status(400).json({ error: 'El correo electrónico ya está registrado' });
         }
-
-        // Verificar si el nombre de usuario ya está registrado
-        const [existingUsername] = await db.promise().query('SELECT * FROM usuarios WHERE NOMBRE_USUARIO = ?', [nombre_usuario]);
+        const [existingUsername] = await db.query('SELECT * FROM usuarios WHERE NOMBRE_USUARIO = ?', [nombre_usuario]);
         if (existingUsername.length > 0) {
             return res.status(400).json({ error: 'El nombre de usuario ya está en uso' });
         }
-
-        // **Se almacena la contraseña en texto plano (⚠️ No recomendado para producción)**
-        const [result] = await db.promise().query(
+        const [result] = await db.query(
             'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE) VALUES (?, ?, ?, ?)',
             [nombre_usuario, email, password, 1]
         );
-
         const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
         res.status(201).json({
             token,
@@ -119,21 +98,6 @@ app.post('/api/register', [
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error en el servidor' });
-    }
-});
-
-// Ruta para obtener usuario por ID
-app.get('/api/usuario/:id', validateToken, async (req, res) => {
-    const userId = req.params.id;
-    try {
-        const [results] = await db.promise().query('SELECT * FROM usuarios WHERE ID = ?', [userId]);
-        if (results.length === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
-        }
-        res.json(results[0]);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error del servidor' });
     }
 });
 
