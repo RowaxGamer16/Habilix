@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   IonPage,
   IonContent,
@@ -25,24 +25,16 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
   const history = useHistory();
 
-  // Verificar si el usuario ya está autenticado
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Redirigir a Inicio_Usuario si ya está autenticado
-      history.push('/Inicio_Usuario');
-    }
-  }, [history]);
-
-  // Validar el formato del email
+  // Validar formato de email
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Manejar el inicio de sesión
+  // Manejar inicio de sesión
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Por favor ingrese su correo y contraseña');
@@ -50,69 +42,85 @@ const Login: React.FC = () => {
     }
 
     if (!validateEmail(email)) {
-      setError('Por favor ingrese un correo electrónico válido');
+      setError('Por favor ingrese un correo válido (ejemplo: usuario@dominio.com)');
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: password.trim() }),
+        body: JSON.stringify({ 
+          email: email.trim(), 
+          password: password.trim() 
+        }),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Error al iniciar sesión');
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.errors?.join(', ') || 'Credenciales incorrectas');
+      }
 
       // Guardar datos en localStorage
       localStorage.setItem('token', data.token);
-      localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      localStorage.setItem('userId', data.usuario.ID);  // Asegúrate de usar 'ID' y no 'id' si tu base de datos usa 'ID'
+      localStorage.setItem('usuario', JSON.stringify(data.usuarios));
+      
+      // Redirección basada en el ROLE
+      if (data.usuarios.ROLE === 2) {
+        history.push('/InicioAdmin'); // Panel de administración
+      } else {
+        history.push('/Inicio_Usuario'); // Panel de usuario normal
+      }
 
-      // Redirigir a Inicio_Usuario después del login
-      history.push('/Inicio_Usuario');
-
-      // Recargar la página para actualizar el estado
-      window.location.reload();
     } catch (error: any) {
-      setError(error.message || 'Error al iniciar sesión. Verifique sus credenciales');
+      setError(error.message || 'Error al iniciar sesión. Verifique sus datos');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Manejar el registro
+  // Manejar registro (sin cambios)
   const handleRegister = async () => {
     if (!name || !email || !password) {
-      setError('Por favor ingrese todos los campos');
+      setError('Por favor complete todos los campos');
       return;
     }
 
     if (!validateEmail(email)) {
-      setError('Por favor ingrese un correo electrónico válido');
+      setError('Por favor ingrese un correo válido (ejemplo: usuario@dominio.com)');
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre_usuario: name, email, password: password.trim() }),
+        body: JSON.stringify({ 
+          nombre_usuario: name.trim(), 
+          email: email.trim(), 
+          password: password.trim() 
+        }),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Error en el registro');
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error en el registro');
+      }
 
-      // Guardar datos en localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      localStorage.setItem('userId', data.usuario.ID);  // Asegúrate de usar 'ID' y no 'id' si tu base de datos usa 'ID'
+      setName('');
+      setEmail('');
+      setPassword('');
+      setError('¡Registro exitoso! Por favor inicie sesión');
+      setIsLogin(true);
 
-      // Redirigir a Inicio_Usuario después del registro
-      history.push('/Inicio_Usuario');
-
-      // Recargar la página para actualizar el estado
-      window.location.reload();
     } catch (error: any) {
-      setError(error.message || 'Error en el registro. Intente nuevamente');
+      setError(error.message || 'Error al registrarse. Intente nuevamente');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,31 +141,61 @@ const Login: React.FC = () => {
 
                   {!isLogin && (
                     <IonItem className="custom-input">
-                      <IonLabel position="floating">Nombre</IonLabel>
-                      <IonInput type="text" value={name} onIonChange={(e) => setName(e.detail.value!)} />
+                      <IonLabel position="floating">Nombre de usuario</IonLabel>
+                      <IonInput 
+                        type="text" 
+                        value={name} 
+                        onIonChange={(e) => setName(e.detail.value!)} 
+                      />
                     </IonItem>
                   )}
 
                   <IonItem className="custom-input">
                     <IonLabel position="floating">Email</IonLabel>
-                    <IonInput type="email" value={email} onIonChange={(e) => setEmail(e.detail.value!)} />
+                    <IonInput 
+                      type="email" 
+                      value={email} 
+                      onIonChange={(e) => setEmail(e.detail.value!)}
+                      inputMode="email"
+                    />
                   </IonItem>
 
                   <IonItem className="custom-input">
                     <IonLabel position="floating">Contraseña</IonLabel>
-                    <IonInput type="password" value={password} onIonChange={(e) => setPassword(e.detail.value!)} />
+                    <IonInput 
+                      type="password" 
+                      value={password} 
+                      onIonChange={(e) => setPassword(e.detail.value!)} 
+                    />
                   </IonItem>
 
-                  <IonButton expand="full" className="main-button" onClick={isLogin ? handleLogin : handleRegister}>
-                    {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
+                  <IonButton 
+                    expand="full" 
+                    className="main-button" 
+                    onClick={isLogin ? handleLogin : handleRegister}
+                    disabled={loading}
+                  >
+                    {loading ? 'Procesando...' : (isLogin ? 'Iniciar Sesión' : 'Registrarse')}
                   </IonButton>
 
-                  <IonButton expand="full" fill="outline" className="switch-button" onClick={() => setIsLogin(!isLogin)}>
+                  <IonButton 
+                    expand="full" 
+                    fill="outline" 
+                    className="switch-button" 
+                    onClick={() => setIsLogin(!isLogin)}
+                    disabled={loading}
+                  >
                     {isLogin ? 'Crear una cuenta' : 'Ya tengo una cuenta'}
                   </IonButton>
                 </IonCardContent>
               </IonCard>
-              <IonToast isOpen={!!error} message={error} duration={3000} onDidDismiss={() => setError('')} />
+              <IonToast 
+                isOpen={!!error} 
+                message={error} 
+                duration={3000} 
+                onDidDismiss={() => setError('')} 
+                color="danger"
+              />
             </IonCol>
           </IonRow>
         </IonGrid>

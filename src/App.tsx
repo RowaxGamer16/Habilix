@@ -34,6 +34,8 @@ import Ayuda from './pages/Ayuda';
 import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import InicioUsuario from './pages/Inicio_Usuario';
+import InicioAdmin from './pages/Admin/InicioAdmin';
+import GestionUsuarios from './pages/Admin/GestionUsuarios';
 import PrivateRoute from './pages/PrivateRoute'; // Asegúrate de importar el PrivateRoute
 import { UserProvider } from './context/UserContext'; // Importa el UserProvider
 
@@ -210,9 +212,13 @@ const App: React.FC = () => {
                 <Route exact path="/Contactos" component={Contactos} />
                 <Route exact path="/Ayuda" component={Ayuda} />
                 <Route exact path="/Login" component={Login} />
+                <Route exact path="/GestionUsuarios" component={GestionUsuarios} />
                 <PrivateRoute exact path="/Perfil" component={Perfil} isLoggedIn={isLoggedIn} />
                 <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} isLoggedIn={isLoggedIn} />
-                <Route exact path="/" render={() => <Redirect to={isLoggedIn ? "/Inicio_Usuario" : "/Inicio"} />} />
+                <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin} isLoggedIn={isLoggedIn} />
+                <Route exact path="/" render={() => (
+                  isLoggedIn ? <Redirect to="/Inicio_Usuario" /> : <Redirect to="/Inicio" />
+                )} />
               </IonRouterOutlet>
             </IonContent>
           </UserProvider>
