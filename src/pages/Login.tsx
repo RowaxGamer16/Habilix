@@ -18,7 +18,8 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSignUpActive, setIsSignUpActive] = useState(false);
-  const history = useHistory();
+  const [loading, setLoading] = useState(false);  // ← Agregado aquí
+  const history = useHistory();  
 
   // Validar formato de email
   const validateEmail = (email: string) => {
