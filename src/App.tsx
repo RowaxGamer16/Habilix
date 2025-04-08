@@ -49,6 +49,7 @@ import '@ionic/react/css/text-alignment.css';
 import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
+import Cursos_Usuario from './pages/Cursos_Usuario';
 
 setupIonicReact();
 
@@ -222,6 +223,7 @@ const App: React.FC = () => {
                 <Route exact path="/Ayuda" component={Ayuda} />
                 <Route exact path="/Login" component={Login} />
                 <Route exact path="/GestionUsuarios" component={GestionUsuarios} />
+                <PrivateRoute exact path="/Cursos_Usuarios" component={Cursos_Usuario} isLoggedIn={isLoggedIn} />
                 <PrivateRoute exact path="/Perfil" component={Perfil} isLoggedIn={isLoggedIn} />
                 <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} isLoggedIn={isLoggedIn} />
                 <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin} isLoggedIn={isLoggedIn} />
