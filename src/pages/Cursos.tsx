@@ -11,432 +11,280 @@ import {
   IonSearchbar,
   IonModal,
   IonTextarea,
-  IonFooter,
   IonGrid,
+  IonInput,
   IonRow,
   IonCol,
   IonIcon,
+  IonAlert,
+  IonLabel,
+  IonItem
 } from '@ionic/react';
-import { star, starOutline, people } from 'ionicons/icons';
+import { star } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import './Cursos.css';
 
+interface Curso {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  profesor: string;
+  portada: string;
+  categoria: string;
+  precio: number;
+  ranking: number;
+  entrega: string;
+  horario: string;
+}
+
 const Cursos: React.FC = () => {
   const history = useHistory();
+  const API_URL = 'http://localhost:5000/api';
+
   const [searchText, setSearchText] = useState('');
-  const [showModal, setShowModal] = useState(false);
   const [showModalCrearCurso, setShowModalCrearCurso] = useState(false);
-  const [selectedCurso, setSelectedCurso] = useState<any>(null);
-  const [comentarios, setComentarios] = useState<{ [id: number]: string[] }>(() =>
-    JSON.parse(localStorage.getItem('comentarios') || '{}')
-  );
-  const [ranking, setRanking] = useState<{ [id: number]: number }>(() =>
-    JSON.parse(localStorage.getItem('ranking') || '{}')
-  );
-  const [suscripciones, setSuscripciones] = useState<{ [id: number]: boolean }>(() =>
-    JSON.parse(localStorage.getItem('suscripciones') || '{}')
-  );
-  const [nuevoComentario, setNuevoComentario] = useState('');
+  const [cursos, setCursos] = useState<Curso[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAlert, setShowAlert] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const [nuevoCurso, setNuevoCurso] = useState({
-    titulo: '',
+    nombre: '',
     descripcion: '',
     profesor: '',
-    entrega: '',
-    imagen: '',
+    portada: '',
     categoria: '',
     precio: 0,
-    rating: 0,
-    students: 0
+    entrega: 'Virtual',
+    horario: 'Flexible'
   });
 
-  const [cursos, setCursos] = useState<any[]>([
-    {
-      id: 1,
-      titulo: 'Introducción a React',
-      descripcion: 'Aprende los fundamentos de React y cómo crear aplicaciones interactivas.',
-      profesor: 'Jose Rijo',
-      imagen: 'react.png',
-      categoria: 'Tecnología',
-      precio: 29.99,
-      rating: 4.5,
-      students: 125,
-      entrega: 'Miércoles',
-      horario: '13:00 – Revisión No. 3'
-    },
-    {
-      id: 2,
-      titulo: 'Fotografía Digital',
-      descripcion: 'Domina los conceptos básicos de fotografía y edición digital.',
-      profesor: 'Ana Torres',
-      imagen: 'fotografia.png',
-      categoria: 'Fotografía',
-      precio: 24.99,
-      rating: 4.8,
-      students: 89,
-      entrega: 'Lunes',
-      horario: '10:00 – Clase 4'
-    },
-    {
-      id: 3,
-      titulo: 'Cocina Italiana',
-      descripcion: 'Aprende las recetas tradicionales de la cocina italiana.',
-      profesor: 'Luis Gómez',
-      imagen: 'cocina.png',
-      categoria: 'Cocina',
-      precio: 19.99,
-      rating: 4.2,
-      students: 64,
-      entrega: 'Viernes',
-      horario: '15:00 – Proyecto final'
-    },
-    {
-      id: 3,
-      titulo: 'Cocina Italiana',
-      descripcion: 'Aprende las recetas tradicionales de la cocina italiana.',
-      profesor: 'Luis Gómez',
-      imagen: 'cocina.png',
-      categoria: 'Cocina',
-      precio: 19.99,
-      rating: 4.2,
-      students: 64,
-      entrega: 'Viernes',
-      horario: '15:00 – Proyecto final'
-    }  
-  ]);
+  useEffect(() => {
+    const fetchCursos = async () => {
+      try {
+        const response = await fetch(`${API_URL}/cursos`);
+        if (!response.ok) throw new Error('Error al obtener cursos');
+        const data = await response.json();
+        setCursos(data);
+      } catch (err) {
+        setError('No se pudieron cargar los cursos');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const cursosFiltrados = cursos.filter(
-    (curso) =>
-      curso.titulo.toLowerCase().includes(searchText.toLowerCase()) ||
-      curso.descripcion.toLowerCase().includes(searchText.toLowerCase()) ||
-      curso.profesor.toLowerCase().includes(searchText.toLowerCase())
-  );
+    fetchCursos();
+  }, []);
 
-  const handleEntrarCurso = (curso: any) => {
-    history.push(`/curso/${curso.id}`, { curso });
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setSelectedImage(file);
   };
 
-  useEffect(() => {
-    localStorage.setItem('comentarios', JSON.stringify(comentarios));
-  }, [comentarios]);
-
-  useEffect(() => {
-    localStorage.setItem('ranking', JSON.stringify(ranking));
-  }, [ranking]);
-
-  useEffect(() => {
-    localStorage.setItem('suscripciones', JSON.stringify(suscripciones));
-  }, [suscripciones]);
-
-  const guardarComentario = () => {
-    if (nuevoComentario.trim() !== '') {
-      setComentarios((prevComentarios) => ({
-        ...prevComentarios,
-        [selectedCurso.id]: [
-          ...(prevComentarios[selectedCurso.id] || []),
-          nuevoComentario,
-        ],
-      }));
-      setNuevoComentario('');
-    }
-  };
-
-  const cambiarRanking = (id: number, estrellas: number) => {
-    setRanking((prevRanking) => ({
-      ...prevRanking,
-      [id]: estrellas,
-    }));
-  };
-
-  const toggleSuscripcion = (id: number) => {
-    const isUserLoggedIn = localStorage.getItem('authToken') !== null;
-    if (!isUserLoggedIn) {
-      alert('Necesitas loguearte o registrarte primero para suscribirte a un curso.');
+  const agregarCurso = async () => {
+    if (!nuevoCurso.nombre || !nuevoCurso.descripcion || !nuevoCurso.profesor) {
+      setError('Nombre, descripción y profesor son campos requeridos');
+      setShowAlert(true);
       return;
     }
-    setSuscripciones((prevSuscripciones) => ({
-      ...prevSuscripciones,
-      [id]: !prevSuscripciones[id],
-    }));
-  };
 
-  const agregarCurso = () => {
-    if (
-      nuevoCurso.titulo &&
-      nuevoCurso.descripcion &&
-      nuevoCurso.profesor &&
-      nuevoCurso.categoria
-    ) {
-      setCursos((prevCursos) => [
-        ...prevCursos,
-        {
-          ...nuevoCurso,
-          id: prevCursos.length + 1,
-          students: 0,
-          rating: 0,
-          entrega: nuevoCurso.entrega || 'Por definir',
-          horario: 'Por definir',
-          imagen: nuevoCurso.imagen || 'https://via.placeholder.com/300x200'
-        },
-      ]);
-      setNuevoCurso({
-        titulo: '',
-        descripcion: '',
-        profesor: '',
-        entrega: '',
-        imagen: '',
-        categoria: '',
-        precio: 0,
-        rating: 0,
-        students: 0
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Debes iniciar sesión para crear un curso');
+        setShowAlert(true);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('nombre', nuevoCurso.nombre);
+      formData.append('descripcion', nuevoCurso.descripcion);
+      formData.append('profesor', nuevoCurso.profesor);
+      formData.append('categoria', nuevoCurso.categoria);
+      formData.append('precio', String(nuevoCurso.precio));
+      formData.append('entrega', nuevoCurso.entrega);
+      formData.append('horario', nuevoCurso.horario);
+      if (selectedImage) formData.append('portada', selectedImage);
+
+      const response = await fetch(`${API_URL}/cursos`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
       });
+
+      if (!response.ok) throw new Error('Error al crear curso');
+
+      const data = await response.json();
+      setCursos(prev => [...prev, { id: data.id, ...nuevoCurso, ranking: 0 }]);
       setShowModalCrearCurso(false);
-    } else {
-      alert('Por favor complete todos los campos requeridos');
+      setNuevoCurso({ nombre: '', descripcion: '', profesor: '', portada: '', categoria: '', precio: 0, entrega: 'Virtual', horario: 'Flexible' });
+      setSelectedImage(null);
+    } catch (err) {
+      setError('Error al crear el curso');
+      setShowAlert(true);
+      console.error(err);
     }
   };
 
-  const isUserLoggedIn = localStorage.getItem('authToken') !== null;
+  const cursosFiltrados = cursos.filter(curso =>
+    (curso.nombre || '').toLowerCase().includes(searchText.toLowerCase()) ||
+    (curso.descripcion || '').toLowerCase().includes(searchText.toLowerCase()) ||
+    (curso.profesor || '').toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const handleVerCurso = (cursoId: number) => {
+    history.push(`/curso/${cursoId}`);
+  };
+
+  const isUserLoggedIn = !!localStorage.getItem('token');
+
+  if (loading) {
+    return (
+      <IonPage className="page-cursos">
+        <IonContent className="ion-padding">
+          <p>Cargando cursos...</p>
+        </IonContent>
+      </IonPage>
+    );
+  }
 
   return (
-    <IonPage>
+    <IonPage className="page-cursos">
       <IonHeader>
         <IonToolbar>
-          <IonTitle>CURSOS</IonTitle>
+          <IonTitle>Cursos Disponibles</IonTitle>
           {isUserLoggedIn && (
-            <IonButton
-              slot="end"
-              onClick={() => setShowModalCrearCurso(true)}
-              style={{ marginRight: '10px' }}
-            >
+            <IonButton slot="end" onClick={() => setShowModalCrearCurso(true)} style={{ marginRight: '16px' }}>
               Nuevo Curso
             </IonButton>
           )}
         </IonToolbar>
       </IonHeader>
-      <IonContent className="page-cursos">
+
+      <IonContent>
         <IonSearchbar
           placeholder="Buscar cursos..."
           value={searchText}
-          onIonInput={(e: any) => setSearchText(e.target.value)}
+          onIonChange={e => setSearchText(e.detail.value!)}
+          animated
         />
 
         <div className="courses-grid">
-          {cursosFiltrados.map((curso) => (
-            <IonCard key={curso.id} className="course-card">
-              <div className="image-container">
-                <img
-                  src={curso.imagen}
-                  alt={curso.titulo}
-                  className="course-image"
-                />
-                {curso.categoria && (
-                  <span className={`course-badge ${curso.categoria.toLowerCase().replace(/[áéíóú]/g, 'a')}`}>
-                    {curso.categoria}
-                  </span>
-                )}
-              </div>
-
-              <IonCardContent className="course-content">
-                <h2 className="course-title">{curso.titulo}</h2>
-                <p className="course-description">{curso.descripcion}</p>
-
-                <div className="course-meta">
-                  <div className="creator-info">
-                    <span className="creator-avatar">
-                      {curso.profesor?.charAt(0).toUpperCase()}
+          {cursosFiltrados.length === 0 ? (
+            <div className="no-results">No se encontraron cursos</div>
+          ) : (
+            cursosFiltrados.map(curso => (
+              <IonCard key={curso.id} className="course-card">
+                <div className="image-container">
+                  <img
+                    src={curso.portada || 'https://via.placeholder.com/300x200'}
+                    alt={curso.nombre}
+                    className="course-image"
+                    onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/300x200')}
+                  />
+                  {curso.categoria && (
+                    <span className={`course-badge ${curso.categoria.toLowerCase().replace(/\s+/g, '-')}`}>
+                      {curso.categoria}
                     </span>
-                    <span className="creator-name">{curso.profesor}</span>
-                  </div>
-                  <div className="rating">
-                    <IonIcon icon={star} className="star-icon" />
-                    <span>{curso.rating || 'Nuevo'}</span>
-                  </div>
-                </div>
-
-                <div className="course-meta secondary-meta">
-                  <div className="students">
-                    <IonIcon icon={people} className="people-icon" />
-                    <span>{curso.students}</span>
-                  </div>
-                  <span className="price">${curso.precio.toFixed(2)}</span>
-                </div>
-
-                <div className="course-actions">
-                  <div className="ranking">
-                    {[1, 2, 3, 4, 5].map((estrella) => (
-                      <IonIcon
-                        key={estrella}
-                        icon={estrella <= (ranking[curso.id] || 0) ? star : starOutline}
-                        onClick={() => cambiarRanking(curso.id, estrella)}
-                        className="star-rating"
-                      />
-                    ))}
-                  </div>
-
-                  <IonButton
-                    color="medium"
-                    size="small"
-                    expand="block"
-                    onClick={() => {
-                      setSelectedCurso(curso);
-                      setShowModal(true);
-                    }}
-                    className="comments-button"
-                  >
-                    Ver Comentarios
-                  </IonButton>
-
-                  {suscripciones[curso.id] && isUserLoggedIn ? (
-                    <IonButton
-                      color="success"
-                      expand="block"
-                      size="small"
-                      onClick={() => handleEntrarCurso(curso)}
-                      className="enter-button"
-                    >
-                      Entrar al curso
-                    </IonButton>
-                  ) : (
-                    <IonButton
-                      color="primary"
-                      expand="block"
-                      size="small"
-                      onClick={() => toggleSuscripcion(curso.id)}
-                      className="subscribe-button"
-                    >
-                      Suscribirse
-                    </IonButton>
                   )}
                 </div>
-              </IonCardContent>
-            </IonCard>
-          ))}
-          {cursosFiltrados.length === 0 && <p className="no-results">No se encontraron cursos.</p>}
+
+                <IonCardContent className="course-content">
+                  <h2 className="course-title">{curso.nombre}</h2>
+                  <p className="course-description">{curso.descripcion}</p>
+
+                  <div className="course-meta">
+                    <span className="creator-name">{curso.profesor}</span>
+                    <div className="rating">
+                      <IonIcon icon={star} className="star-icon" />
+                      <span>{curso.ranking || 0}</span>
+                    </div>
+                    <div className="price">
+                      <span>${curso.precio || 'Gratis'}</span>
+                    </div>
+                  </div>
+
+                  <IonButton expand="block" onClick={() => handleVerCurso(curso.id)} color="primary">
+                    Ver Detalles
+                  </IonButton>
+                </IonCardContent>
+              </IonCard>
+            ))
+          )}
         </div>
 
-        {/* Modal de comentarios */}
-        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Comentarios: {selectedCurso?.titulo}</IonTitle>
-              <IonButton slot="end" onClick={() => setShowModal(false)}>
-                Cerrar
-              </IonButton>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent className="modal-container">
-            {comentarios[selectedCurso?.id]?.length ? (
-              comentarios[selectedCurso.id].map((comentario, index) => (
-                <div key={index} className="comment-item">
-                  <p>{comentario}</p>
-                </div>
-              ))
-            ) : (
-              <p className="no-comments">No hay comentarios aún.</p>
-            )}
-            <IonTextarea
-              placeholder="Escribe tu comentario..."
-              value={nuevoComentario}
-              onIonInput={(e: any) => setNuevoComentario(e.target.value)}
-              className="comment-input"
-            />
-          </IonContent>
-          <IonFooter>
-            <IonToolbar>
-              <IonButton
-                expand="block"
-                onClick={guardarComentario}
-                className="save-comment-button"
-              >
-                Guardar Comentario
-              </IonButton>
-            </IonToolbar>
-          </IonFooter>
-        </IonModal>
-
-        {/* Modal para crear nuevo curso */}
+        {/* Modal para crear curso */}
         <IonModal isOpen={showModalCrearCurso} onDidDismiss={() => setShowModalCrearCurso(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Crear Nuevo Curso</IonTitle>
-              <IonButton slot="end" onClick={() => setShowModalCrearCurso(false)}>
-                Cerrar
-              </IonButton>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent>
+          <IonContent className="ion-padding">
+            <h2>Crear Nuevo Curso</h2>
+
             <IonGrid>
               <IonRow>
                 <IonCol>
-                  <IonTextarea
-                    value={nuevoCurso.titulo}
-                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, titulo: e.target.value })}
-                    placeholder="Título del curso*"
-                    className="form-input"
-                  />
+                  <IonItem>
+                    <IonLabel position="floating">Nombre del curso</IonLabel>
+                    <IonInput value={nuevoCurso.nombre} onIonChange={e => setNuevoCurso({ ...nuevoCurso, nombre: e.detail.value || '' })} />
+                  </IonItem>
                 </IonCol>
               </IonRow>
+
               <IonRow>
                 <IonCol>
-                  <IonTextarea
-                    value={nuevoCurso.descripcion}
-                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, descripcion: e.target.value })}
-                    placeholder="Descripción*"
-                    className="form-input"
-                  />
+                  <IonItem>
+                    <IonLabel position="floating">Descripción</IonLabel>
+                    <IonTextarea value={nuevoCurso.descripcion} onIonChange={e => setNuevoCurso({ ...nuevoCurso, descripcion: e.detail.value || '' })} rows={4} />
+                  </IonItem>
                 </IonCol>
               </IonRow>
+
               <IonRow>
                 <IonCol>
-                  <IonTextarea
-                    value={nuevoCurso.profesor}
-                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, profesor: e.target.value })}
-                    placeholder="Instructor*"
-                    className="form-input"
-                  />
+                  <IonItem>
+                    <IonLabel position="floating">Profesor</IonLabel>
+                    <IonInput value={nuevoCurso.profesor} onIonChange={e => setNuevoCurso({ ...nuevoCurso, profesor: e.detail.value || '' })} />
+                  </IonItem>
                 </IonCol>
               </IonRow>
+
               <IonRow>
                 <IonCol>
-                  <IonTextarea
-                    value={nuevoCurso.categoria}
-                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, categoria: e.target.value })}
-                    placeholder="Categoría* (Tecnología, Fotografía, Cocina, etc.)"
-                    className="form-input"
-                  />
+                  <IonLabel>Imagen del Curso</IonLabel>
+                  <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} id="uploadFile" />
+                  <IonButton expand="block" onClick={() => document.getElementById('uploadFile')?.click()} color="primary">
+                    Seleccionar Imagen
+                  </IonButton>
+                  {selectedImage && <p>{selectedImage.name}</p>}
                 </IonCol>
               </IonRow>
+
               <IonRow>
-                <IonCol>
-                  <IonTextarea
-                    value={nuevoCurso.precio.toString()}
-                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, precio: parseFloat(e.target.value) || 0 })}
-                    placeholder="Precio"
-                    className="form-input"
-                  />
+                <IonCol size="6">
+                  <IonItem>
+                    <IonLabel position="floating">Categoría</IonLabel>
+                    <IonInput value={nuevoCurso.categoria} onIonChange={e => setNuevoCurso({ ...nuevoCurso, categoria: e.detail.value || '' })} />
+                  </IonItem>
+                </IonCol>
+                <IonCol size="6">
+                  <IonItem>
+                    <IonLabel position="floating">Precio</IonLabel>
+                    <IonInput type="number" value={nuevoCurso.precio} disabled />
+                  </IonItem>
                 </IonCol>
               </IonRow>
+
               <IonRow>
                 <IonCol>
-                  <IonTextarea
-                    value={nuevoCurso.imagen}
-                    onIonInput={(e: any) => setNuevoCurso({ ...nuevoCurso, imagen: e.target.value })}
-                    placeholder="URL de la imagen (opcional)"
-                    className="form-input"
-                  />
+                  <IonButton expand="block" onClick={agregarCurso} color="primary">Publicar Curso</IonButton>
+                  <IonButton expand="block" onClick={() => setShowModalCrearCurso(false)} color="medium" fill="outline">Cancelar</IonButton>
                 </IonCol>
               </IonRow>
             </IonGrid>
-            <IonButton
-              expand="block"
-              onClick={agregarCurso}
-              className="create-course-button"
-            >
-              Crear Curso
-            </IonButton>
           </IonContent>
         </IonModal>
+
+        <IonAlert isOpen={showAlert} onDidDismiss={() => setShowAlert(false)} header="Error" message={error || ''} buttons={['OK']} />
       </IonContent>
     </IonPage>
   );

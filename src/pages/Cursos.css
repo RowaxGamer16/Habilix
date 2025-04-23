@@ -1,38 +1,36 @@
-/* Estilos encapsulados bajo la clase page-cursos */
 .page-cursos {
   --course-primary: var(--ion-color-primary);
   --course-success: var(--ion-color-success);
   --course-medium: var(--ion-color-medium);
   --course-light: var(--ion-color-light);
   --course-dark: var(--ion-color-dark);
+  background-color: #f1f3f4;
 }
 
 .page-cursos .courses-grid {
-  padding: 0 10px;
+  padding: 20px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
 }
 
 .page-cursos .course-card {
-  height: 100%;
-  margin: 5px;
-  position: relative;
-  cursor: pointer;
-  transition: transform 0.2s;
-  border-radius: 8px;
+  background: white;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(60, 64, 67, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-cursos .course-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(60, 64, 67, 0.3);
 }
 
 .page-cursos .image-container {
-  position: relative;
-  height: 160px;
+  height: 180px;
   overflow: hidden;
 }
 
@@ -40,7 +38,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.4s ease;
 }
 
 .page-cursos .course-card:hover .course-image {
@@ -49,158 +47,79 @@
 
 .page-cursos .course-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 0.7rem;
+  top: 16px;
+  right: 16px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
   font-weight: 500;
+  background-color: var(--course-primary);
   color: white;
-  background: var(--course-primary);
+  border-radius: 12px;
+  text-transform: capitalize;
 }
 
-.page-cursos .course-badge.fotografia {
-  background: #8e44ad;
+.page-cursos .course-content {
+  padding: 16px 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.page-cursos .course-badge.tecnologia {
-  background: #3498db;
+.page-cursos .course-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #202124;
+  margin-bottom: 6px;
 }
 
-.page-cursos .course-badge.cocina {
-  background: #e74c3c;
-}
-
-.page-cursos .course-badge.negocios {
-  background: #2ecc71;
-}
-
-.page-cursos .creator-avatar {
-  width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 8px;
-  font-size: 0.8rem;
-  background: var(--course-light);
-  color: var(--course-dark);
-  border-radius: 50%;
+.page-cursos .course-description {
+  font-size: 0.95rem;
+  color: #5f6368;
+  margin-bottom: 12px;
+  flex-grow: 1;
 }
 
 .page-cursos .course-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: #5f6368;
+  margin-top: auto;
 }
 
-.page-cursos .course-meta .rating,
-.page-cursos .course-meta .students {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.page-cursos .course-meta .students {
-  color: #666;
+.page-cursos .creator-name {
+  font-weight: 500;
 }
 
 .page-cursos .price {
   font-weight: bold;
-  color: var(--course-primary);
-  font-size: 1rem;
+  color: #1a73e8;
 }
 
-.page-cursos .no-results {
-  text-align: center;
-  grid-column: 1 / -1;
-  padding: 40px 0;
-  color: #666;
-}
-
-.page-cursos .course-content {
-  padding: 16px;
-}
-
-.page-cursos .course-title {
-  margin: 0 0 8px 0;
-  font-size: 1.1rem;
-  color: #2c3e50;
-}
-
-.page-cursos .course-description {
-  margin: 0 0 8px 0;
-  font-size: 0.9rem;
-  color: #666;
-  line-height: 1.5;
-}
-
-.page-cursos .course-actions {
-  margin-top: 12px;
-}
-
-.page-cursos .ranking {
+.page-cursos .rating {
   display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
-  justify-content: center;
-}
-
-.page-cursos .star-rating {
-  color: gold;
-  cursor: pointer;
-  font-size: 20px;
+  align-items: center;
+  color: #fbbc04;
 }
 
 .page-cursos .star-icon {
-  color: gold;
+  margin-right: 3px;
 }
 
-.page-cursos .people-icon {
-  font-size: 0.9rem;
-  color: #666;
+.page-cursos .no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #999;
+  font-size: 1rem;
+  padding: 60px 0;
 }
 
-/* Estilos para los modales */
 .page-cursos .modal-container {
   padding: 16px;
 }
 
-.page-cursos .comment-item {
-  background: #f8f9fa;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-.page-cursos .no-comments {
-  text-align: center;
-  color: #666;
-  padding: 20px;
-}
-
-.page-cursos .comment-input {
-  margin: 16px;
-  --background: #ffffff;
-  --border-radius: 8px;
-  --padding-start: 12px;
-  border: 1px solid #e0e0e0;
-}
-
-.page-cursos .save-comment-button {
-  margin: 0 16px;
-}
-
-.page-cursos .form-input {
-  margin: 10px 0;
-  --background: #ffffff;
-  --border-radius: 8px;
-  --padding-start: 12px;
-  border: 1px solid #e0e0e0;
-}
-
-.page-cursos .create-course-button {
-  margin: 16px;
+.page-cursos ion-button {
+  border-radius: 10px;
 }

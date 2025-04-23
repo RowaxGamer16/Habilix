@@ -37,7 +37,8 @@ import InicioUsuario from './pages/Inicio_Usuario';
 import InicioAdmin from './pages/Admin/InicioAdmin';
 import GestionUsuarios from './pages/Admin/GestionUsuarios';
 import PrivateRoute from './pages/PrivateRoute'; // Asegúrate de importar el PrivateRoute
-import { UserProvider } from './context/UserContext'; // Importa el UserProvider
+import { UserProvider } from './context/UserContext'; // Importa el 
+import CursoDetalle from './pages/CursoDetalle';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -135,7 +136,7 @@ const App: React.FC = () => {
                 },
                 {
                   icon: isLoggedIn ? personCircle : logIn,
-                  label: isLoggedIn ? 'Perfil' : 'Registro',
+                  label: isLoggedIn ? 'Perfil' : 'Login',
                   link: isLoggedIn ? "/Perfil" : "/Login",
                   color: isLoggedIn ? '#00b09b' : '#1FA2FF'
                 }
@@ -222,6 +223,7 @@ const App: React.FC = () => {
                 <Route exact path="/Contactos" component={Contactos} />
                 <Route exact path="/Ayuda" component={Ayuda} />
                 <Route exact path="/Login" component={Login} />
+                <Route path="/curso/:id" component={CursoDetalle} exact />
                 <Route exact path="/GestionUsuarios" component={GestionUsuarios} />
                 <PrivateRoute exact path="/Cursos_Usuarios" component={Cursos_Usuario} isLoggedIn={isLoggedIn} />
                 <PrivateRoute exact path="/Perfil" component={Perfil} isLoggedIn={isLoggedIn} />

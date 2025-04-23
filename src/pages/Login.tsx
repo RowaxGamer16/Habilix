@@ -60,6 +60,7 @@ const Login: React.FC = () => {
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
       localStorage.setItem('userId', data.usuario.ID);
+      
 
     } catch (error: any) {
       setError(error.message || 'Error al iniciar sesión. Verifique sus datos');
