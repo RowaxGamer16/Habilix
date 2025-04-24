@@ -198,7 +198,7 @@ const App: React.FC = () => {
                 fontSize: '0.8rem',
                 fontFamily: 'Josefin Sans, sans-serif'
               }}>
-                © 2023 Habilix
+                © 2025 Habilix
               </IonText>
             </div>
           </IonContent>

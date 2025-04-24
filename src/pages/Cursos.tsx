@@ -179,10 +179,10 @@ const Cursos: React.FC = () => {
               <IonCard key={curso.id} className="course-card">
                 <div className="image-container">
                   <img
-                    src={curso.portada || 'https://via.placeholder.com/300x200'}
+                    src={curso.portada || ''}
                     alt={curso.nombre}
                     className="course-image"
-                    onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/300x200')}
+                    onError={(e) => (e.currentTarget.src = '')}
                   />
                   {curso.categoria && (
                     <span className={`course-badge ${curso.categoria.toLowerCase().replace(/\s+/g, '-')}`}>
