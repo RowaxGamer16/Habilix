@@ -494,7 +494,7 @@ const Inicio: React.FC = () => {
                 <p>Únete a miles de personas que ya están mejorando sus habilidades con Habilix</p>
               </IonCol>
               <IonCol size="12" sizeMd="4" className="ion-text-center ion-text-md-end">
-                <IonButton size="large" routerLink="/Registro">
+                <IonButton size="large" routerLink="/Login">
                   Regístrate Gratis
                 </IonButton>
               </IonCol>
