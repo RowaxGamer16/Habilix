@@ -10,6 +10,8 @@ import { fileURLToPath } from 'url'; // Necesario para simular __dirname en ESM
 
 dotenv.config();
 
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -81,9 +83,13 @@ app.post('/api/login', [
         }
 
         const user = results[0];
+
+        // Generar el token JWT
         const token = jwt.sign({ id: user.ID }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
 
-        res.json({
+        // Responder con el token y los datos del usuario
+        return res.json({
+            success: true,
             token,
             usuario: {
                 ID: user.ID,
@@ -94,11 +100,89 @@ app.post('/api/login', [
                 FECHA_CREACION: user.FECHA_CREACION
             }
         });
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Error del servidor' });
+        return res.status(500).json({ error: 'Error del servidor' });
     }
 });
+
+
+
+
+// Añadir esto junto a la ruta de login existente
+app.post('/api/register', [
+    body('nombre_usuario').notEmpty().trim().escape().withMessage('Nombre de usuario requerido'),
+    body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
+    body('password').isLength({ min: 5 }).withMessage('La contraseña debe tener al menos 5 caracteres')
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+            success: false,
+            errors: errors.array().map(err => ({
+                field: err.param,
+                message: err.msg
+            }))
+        });
+    }
+
+    const { nombre_usuario, email, password } = req.body;
+
+    try {
+        // Verificar si el email ya existe
+        const [emailCheck] = await db.query(
+            'SELECT ID FROM usuarios WHERE EMAIL = ? LIMIT 1', 
+            [email]
+        );
+        
+        if (emailCheck.length > 0) {
+            return res.status(409).json({ 
+                success: false,
+                error: 'El correo electrónico ya está registrado',
+                field: 'email'
+            });
+        }
+
+        // ✅ INSERTAR nuevo usuario
+        const [result] = await db.query(
+            `INSERT INTO usuarios 
+            (NOMBRE_USUARIO, PASSWORD, EMAIL, FECHA_CREACION) 
+            VALUES (?, ?, ?, NOW())`,
+            [nombre_usuario, password, email]
+        );
+
+        // ✅ Obtener usuario creado (solo campos necesarios)
+        const [newUser] = await db.query(
+            'SELECT ID, NOMBRE_USUARIO as nombre_usuario, EMAIL, ROLE FROM usuarios WHERE ID = ?', 
+            [result.insertId]
+        );
+
+        // ✅ Generar token JWT
+        const token = jwt.sign(
+            { id: newUser[0].ID },
+            process.env.JWT_SECRET || 'token',
+            { expiresIn: '24h' }
+        );
+
+        return res.status(201).json({
+            success: true,
+            token,
+            usuario: newUser[0]
+        });
+
+    } catch (error) {
+        console.error('Error en registro:', error);
+        return res.status(500).json({ 
+            success: false,
+            error: 'Error al registrar el usuario',
+            ...(process.env.NODE_ENV === 'development' && { 
+                details: error.message 
+            })
+        });
+    }
+});
+
 
 // Crear curso con imagen y asociar al usuario
 app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {
@@ -268,7 +352,7 @@ app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Iniciar el servidor
-const PORT = process.env.PORT || 3000;
+const PORT = 5000;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

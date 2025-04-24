@@ -18,7 +18,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSignUpActive, setIsSignUpActive] = useState(false);
-  const [loading, setLoading] = useState(false);  // ← Agregado aquí
+  const [loading, setLoading] = useState(false);
   const history = useHistory();  
 
   // Validar formato de email
@@ -61,6 +61,8 @@ const Login: React.FC = () => {
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
       localStorage.setItem('userId', data.usuario.ID);
       
+      // Redirigir después de login exitoso
+      history.push('/Inicio_Usuario'); // Ajusta según tu ruta
 
     } catch (error: any) {
       setError(error.message || 'Error al iniciar sesión. Verifique sus datos');
@@ -69,52 +71,83 @@ const Login: React.FC = () => {
     }
   };
 
-  // Manejar registro (sin cambios)
+  // Manejar registro
   const handleRegister = async () => {
+    // Resetear errores previos
+    setError('');
+    
+    // Validaciones básicas
     if (!name || !email || !password) {
-      setError('Por favor complete todos los campos');
-      return;
+        setError('Por favor complete todos los campos');
+        return;
     }
 
     if (!validateEmail(email)) {
-      setError('Por favor ingrese un correo válido (ejemplo: usuario@dominio.com)');
-      return;
+        setError('Por favor ingrese un correo válido (ejemplo: usuario@dominio.com)');
+        return;
+    }
+
+    if (password.length < 5) {
+        setError('La contraseña debe tener al menos 5 caracteres');
+        return;
     }
 
     setLoading(true);
+    
     try {
-      const response = await fetch('http://localhost:5000/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          nombre_usuario: name.trim(), 
-          email: email.trim(), 
-          password: password.trim() 
-        }),
-      });
+        const response = await fetch('http://localhost:5000/api/register', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ 
+                nombre_usuario: name.trim(), 
+                email: email.trim().toLowerCase(), 
+                password: password.trim() 
+            }),
+        });
 
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Error en el registro');
-      }
+        // Manejar respuestas no exitosas
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.error || 
+                              errorData.message || 
+                              `Error ${response.status}: ${response.statusText}`;
+            throw new Error(errorMessage);
+        }
 
-      // Guardar datos en localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      localStorage.setItem('userId', data.usuario.ID);
+        const data = await response.json();
+        
+        // Guardar datos de autenticación
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('usuario', JSON.stringify(data.usuario));
+        localStorage.setItem('userId', data.usuario.ID);
+
+        // Cambiar al formulario de login después del registro exitoso
+        setIsSignUpActive(false);
+
+        // Redirigir a la página de inicio de sesión o dashboard
+        history.push('/login'); // Ajusta según tu ruta
 
     } catch (error: any) {
-      setError(error.message || 'Error al registrarse. Intente nuevamente');
+        console.error('Error en registro:', error);
+        
+        // Mensajes de error más específicos
+        let errorMessage = error.message;
+        if (error.message.includes('Failed to fetch')) {
+            errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión o intenta más tarde.';
+        }
+        
+        setError(errorMessage);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   return (
     <IonPage>
       <IonContent className="ion-padding">
-        {/* Contenedor específico para la página de login */}
         <div className="login-page">
           <div className={`container ${isSignUpActive ? 'right-panel-active' : ''}`} id="container">
             {/* Formulario de Registro */}
@@ -204,7 +237,7 @@ const Login: React.FC = () => {
                 </div>
                 <div className="overlay-panel overlay-right">
                   <h1>Hello, Friend!</h1>
-                  <p>Enter your personal details and start journey with us</p>
+                  <p>Enter your personal details and start your journey with us</p>
                   <IonButton className="ghost" onClick={() => setIsSignUpActive(true)}>
                     Sign Up
                   </IonButton>
