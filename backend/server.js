@@ -89,30 +89,6 @@ async function initializeDatabase() {
     }
 }
 
-// Middleware de autenticación JWT
-const authenticateJWT = async (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
-    
-    if (!token) {
-        return res.status(403).json({ error: 'Token no proporcionado' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
-        req.user = await getUserById(decoded.id);
-        if (!req.user) {
-            return res.status(401).json({ error: 'Usuario no encontrado' });
-        }
-        next();
-    } catch (err) {
-        return res.status(401).json({ error: 'Token inválido o expirado' });
-    }
-};
-
-async function getUserById(id) {
-    const [user] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [id]);
-    return user[0];
-}
 
 // Ruta protegida para obtener perfil de usuario autenticado
 app.get('/api/usuario/perfil', authenticateJWT, async (req, res) => {
@@ -281,45 +257,85 @@ app.post('/api/register', [
     }
 });
 
-// Rutas de cursos (protegidas con authenticateJWT)
+// Middleware de autenticación JWT
+const authenticateJWT = async (req, res, next) => {
+    // Obtener el token de la cabecera Authorization
+    const token = req.headers['authorization']?.split(' ')[1];
+    
+    // Si no se proporciona el token
+    if (!token) {
+        return res.status(403).json({ error: 'Token no proporcionado' });
+    }
+
+    try {
+        // Verificar el token y decodificarlo
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
+
+        // Obtener el usuario a partir del ID decodificado
+        req.user = await getUserById(decoded.id);
+
+        // Si no se encuentra el usuario
+        if (!req.user) {
+            return res.status(401).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Continuar con la siguiente función del middleware
+        next();
+    } catch (err) {
+        // Si hay un error al verificar el token
+        return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+};
+
+// Función para obtener el usuario desde la base de datos por ID
+async function getUserById(id) {
+    try {
+        // Realizar una consulta a la base de datos para obtener el usuario
+        const [user] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [id]);
+
+        // Si no se encuentra el usuario, devolvemos null
+        return user.length > 0 ? user[0] : null;
+    } catch (err) {
+        console.error('Error al obtener el usuario:', err);
+        throw err; // Propagar el error
+    }
+}
+
+
 app.post('/api/cursos', authenticateJWT, upload.single('portada'), async (req, res) => {
     try {
-        const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
+        // Los campos vienen en req.body para los textos y req.file para la imagen
+        const { nombre, descripcion, profesor, categoria, precio, entrega, horario } = req.body;
         const portada = req.file ? `/uploads/${req.file.filename}` : '';
-        
-        const [result] = await db.query(
-            `INSERT INTO cursos 
-            (nombre, descripcion, portada, categoria, precio, entrega, horario, ranking, opiniones, id_usuario)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?)`,
-            [nombre, descripcion, portada, categoria, precio, entrega, horario, req.user.ID]
-        );
-        
-        res.json({ success: true, id: result.insertId });
+        const id_usuario = req.user.ID;
+
+        // Convertir precio a número
+        const precioNum = parseFloat(precio) || 0;
+
+        const query = `INSERT INTO cursos...`;
+        const [result] = await db.query(query, [
+            nombre,
+            descripcion,
+            profesor,
+            portada,
+            categoria,
+            precioNum, // Asegurar que es número
+            entrega,
+            horario,
+            id_usuario
+        ]);
+
+        res.json({ 
+            success: true, 
+            id: result.insertId,
+            portada // Devolver la ruta de la imagen para que el frontend la muestre
+        });
     } catch (err) {
         console.error('Error al crear curso:', err);
         res.status(500).json({ error: 'Error al crear el curso' });
     }
 });
 
-// Crear curso con imagen y asociar al usuario
-app.post('/api/cursos', authenticateJWT, upload.single('portada'), async (req, res) => {
-    const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
-    const portada = req.file ? `/uploads/${req.file.filename}` : '';
-    const id_usuario = req.user.ID;  // Obtener el ID del usuario autenticado
-
-    const query = `
-        INSERT INTO cursos
-        (nombre, descripcion, portada, categoria, precio, entrega, horario, ranking, opiniones, id_usuario)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?)
-    `;
-
-    try {
-        const [result] = await db.query(query, [nombre, descripcion, portada, categoria, precio, entrega, horario, id_usuario]);
-        res.json({ success: true, id: result.insertId });
-    } catch (err) {
-        res.status(500).json({ error: 'Error al crear el curso' });
-    }
-});
 
 // Obtener todos los cursos
 app.get('/api/cursos', async (req, res) => {
@@ -345,7 +361,7 @@ app.get('/api/cursos/:id', async (req, res) => {
 // Editar curso
 app.put('/api/cursos/:id', authenticateJWT, upload.single('portada'), async (req, res) => {
     const idCurso = req.params.id;
-    const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
+    const { nombre, descripcion, profesor, categoria, precio, entrega, horario } = req.body;
     const portada = req.file ? `/uploads/${req.file.filename}` : null;
 
     try {
@@ -354,8 +370,8 @@ app.put('/api/cursos/:id', authenticateJWT, upload.single('portada'), async (req
             return res.status(403).json({ error: 'No tienes permiso para editar este curso' });
         }
 
-        const campos = ['nombre = ?', 'descripcion = ?', 'categoria = ?', 'precio = ?', 'entrega = ?', 'horario = ?'];
-        const valores = [nombre, descripcion, categoria, precio, entrega, horario];
+        const campos = ['nombre = ?', 'descripcion = ?', 'profesor = ?',  'categoria = ?', 'precio = ?', 'entrega = ?', 'horario = ?'];
+        const valores = [nombre, descripcion, profesor,  categoria, precio, entrega, horario];
 
         if (portada) {
             campos.push('portada = ?');
