@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client';
 import { IonApp } from '@ionic/react';
 import App from './App';
 
@@ -9,9 +9,10 @@ import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 
-ReactDOM.render(
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+
+root.render(
   <IonApp>
     <App />
-  </IonApp>,
-  document.getElementById('root')
+  </IonApp>
 );

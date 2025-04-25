@@ -6,186 +6,303 @@ import { body, validationResult } from 'express-validator';
 import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url'; // Necesario para simular __dirname en ESM
+import { fileURLToPath } from 'url';
 
+// Configuración de entorno
 dotenv.config();
 
-
-
+// Configuración de rutas de archivos
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(cors());
+
+// Middlewares
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
-// Configuración de multer para almacenamiento de archivos
+// Configuración de Multer para subida de archivos
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, path.join(__dirname, 'uploads'));
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
-const upload = multer({ storage: storage });
-
-// Conexión a la base de datos
-const db = await mysql.createPool({
-    connectionLimit: 10,
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'intercambio_de_abilidades',
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
-// Middleware para validar el token JWT
-const validateToken = async (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+// Conexión a la base de datos
+let db;
 
+async function initializeDatabase() {
+    try {
+        db = await mysql.createPool({
+            connectionLimit: 10,
+            host: process.env.DB_HOST || 'localhost',
+            user: process.env.DB_USER || 'root',
+            password: process.env.DB_PASSWORD || '',
+            database: process.env.DB_NAME || 'intercambio_de_abilidades',
+            waitForConnections: true,
+            queueLimit: 0
+        });
+
+        // Verificar y crear tablas con la estructura correcta
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS roles (
+                ID INT PRIMARY KEY,
+                NOMBRE VARCHAR(50) NOT NULL
+                /* Eliminado: DESCRIPCION VARCHAR(255) */
+            )
+        `);
+
+        await db.query(`
+            INSERT IGNORE INTO roles (ID, NOMBRE) 
+            VALUES (1, 'user')
+            /* Eliminado: , 'Usuario normal' */
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS usuarios (
+                ID INT AUTO_INCREMENT PRIMARY KEY,
+                NOMBRE_USUARIO VARCHAR(100) NOT NULL,
+                EMAIL VARCHAR(100) NOT NULL UNIQUE,
+                PASSWORD VARCHAR(255) NOT NULL,
+                ROLE INT DEFAULT 1,
+                TELEFONO VARCHAR(20),
+                FECHA_CREACION DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        console.log('Base de datos inicializada correctamente');
+    } catch (error) {
+        console.error('Error al inicializar la base de datos:', error);
+        throw error;
+    }
+}
+
+// Middleware de autenticación JWT
+const authenticateJWT = async (req, res, next) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    
     if (!token) {
-        return res.status(403).json({ error: 'Acceso denegado, no se proporcionó token' });
+        return res.status(403).json({ error: 'Token no proporcionado' });
     }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
-        const [results] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [decoded.id]);
-
-        if (results.length === 0) {
+        req.user = await getUserById(decoded.id);
+        if (!req.user) {
             return res.status(401).json({ error: 'Usuario no encontrado' });
         }
-
-        req.user = results[0];
         next();
     } catch (err) {
-        return res.status(401).json({ error: 'Token inválido' });
+        return res.status(401).json({ error: 'Token inválido o expirado' });
     }
 };
 
-// Ruta de login
+async function getUserById(id) {
+    const [user] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [id]);
+    return user[0];
+}
+
+// Ruta protegida para obtener perfil de usuario autenticado
+app.get('/api/usuario/perfil', authenticateJWT, async (req, res) => {
+    try {
+      const userId = req.user.ID;
+  
+      const [result] = await pool.query(
+        'SELECT id, nombre_usuario, email, role, telefono, fecha_creacion FROM usuarios WHERE id = ?',
+        [userId]
+      );
+  
+      if (result.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+  
+      res.json(result[0]);
+    } catch (error) {
+      console.error('Error al obtener perfil:', error.message);
+      res.status(500).json({ error: 'Error al obtener el perfil del usuario' });
+    }
+  });
+
+// Asegúrate de que 'authenticateJWT' sea un middleware que verifique el JWT y lo decodifique.
+// Este middleware debe agregar la propiedad 'user' a 'req' con la información decodificada del token.
+
+app.get('/api/usuario/:id', authenticateJWT, async (req, res) => {
+    try {
+      const userId = req.params.id;
+  
+      // Verificar que el usuario esté autenticado y que su ID coincida con el ID en la URL
+      if (!req.user || req.user.ID !== parseInt(userId)) {
+        return res.status(403).json({ error: 'No autorizado para ver este perfil' });
+      }
+  
+      // Realizar la consulta a la base de datos para obtener los datos del usuario
+      const [users] = await db.query(
+        'SELECT ID, NOMBRE_USUARIO, EMAIL, ROLE, TELEFONO FROM usuarios WHERE ID = ?',
+        [userId]
+      );
+  
+      // Verificar si el usuario existe
+      if (users.length === 0) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+  
+      // Obtener los datos del usuario
+      const user = users[0];
+  
+      // Enviar los datos del usuario como respuesta
+      res.json({
+        id: user.ID,
+        nombre_usuario: user.NOMBRE_USUARIO,
+        email: user.EMAIL,
+        role: user.ROLE,
+        telefono: user.TELEFONO || null,
+      });
+  
+    } catch (error) {
+      console.error('Error al obtener usuario:', error);
+      res.status(500).json({ error: 'Error del servidor al obtener datos de usuario' });
+    }
+  });
+  
+// Rutas de autenticación
 app.post('/api/login', [
     body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 5 }),
+    body('password').isLength({ min: 1 })
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password } = req.body;
-
     try {
-        const [results] = await db.query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
-
-        if (results.length === 0 || results[0].PASSWORD !== password) {
-            return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
+        const [users] = await db.query(
+            'SELECT * FROM usuarios WHERE EMAIL = ?', 
+            [req.body.email.toLowerCase().trim()]
+        );
+        
+        if (!users[0] || users[0].PASSWORD !== req.body.password.trim()) {
+            return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
-        const user = results[0];
+        const user = users[0];
+        const token = jwt.sign(
+            { id: user.ID, role: user.ROLE },
+            process.env.JWT_SECRET || 'secret',
+            { expiresIn: '1h' }
+        );
 
-        // Generar el token JWT
-        const token = jwt.sign({ id: user.ID }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
-
-        // Responder con el token y los datos del usuario
         return res.json({
-            success: true,
             token,
-            usuario: {
+            user: {
                 ID: user.ID,
                 NOMBRE_USUARIO: user.NOMBRE_USUARIO,
                 EMAIL: user.EMAIL,
-                ROLE: user.ROLE,
-                TELEFONO: user.TELEFONO,
-                FECHA_CREACION: user.FECHA_CREACION
+                ROLE: user.ROLE
             }
         });
-
     } catch (error) {
-        console.error(error);
+        console.error('Error en login:', error);
         return res.status(500).json({ error: 'Error del servidor' });
     }
 });
 
-
-
-
-// Añadir esto junto a la ruta de login existente
 app.post('/api/register', [
-    body('nombre_usuario').notEmpty().trim().escape().withMessage('Nombre de usuario requerido'),
-    body('email').isEmail().normalizeEmail().withMessage('Email inválido'),
-    body('password').isLength({ min: 5 }).withMessage('La contraseña debe tener al menos 5 caracteres')
+    body('nombre_usuario').notEmpty().trim().escape(),
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 5 })
 ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-            success: false,
-            errors: errors.array().map(err => ({
-                field: err.param,
-                message: err.msg
-            }))
-        });
-    }
-
-    const { nombre_usuario, email, password } = req.body;
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-        // Verificar si el email ya existe
-        const [emailCheck] = await db.query(
-            'SELECT ID FROM usuarios WHERE EMAIL = ? LIMIT 1', 
-            [email]
-        );
+        const { nombre_usuario, email, password } = req.body;
         
-        if (emailCheck.length > 0) {
-            return res.status(409).json({ 
-                success: false,
-                error: 'El correo electrónico ya está registrado',
-                field: 'email'
-            });
+        // Verificar si el email ya existe
+        const [existing] = await db.query('SELECT ID FROM usuarios WHERE EMAIL = ?', [email.toLowerCase().trim()]);
+        if (existing[0]) {
+            return res.status(409).json({ error: 'El email ya está registrado' });
         }
 
-        // ✅ INSERTAR nuevo usuario
+        // Verificar que exista el rol por defecto (ID = 1)
+        const [roleExists] = await db.query('SELECT ID FROM roles WHERE ID = 1');
+        if (!roleExists[0]) {
+            await db.query('INSERT INTO roles (ID, NOMBRE) VALUES (1, "user")');
+        }
+
+        // Insertar nuevo usuario asegurando el ROLE
         const [result] = await db.query(
-            `INSERT INTO usuarios 
-            (NOMBRE_USUARIO, PASSWORD, EMAIL, FECHA_CREACION) 
-            VALUES (?, ?, ?, NOW())`,
-            [nombre_usuario, password, email]
+            `INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE) 
+             VALUES (?, ?, ?, 1)`, // Asignamos ROLE = 1 explícitamente
+            [nombre_usuario.trim(), email.toLowerCase().trim(), password.trim()]
         );
 
-        // ✅ Obtener usuario creado (solo campos necesarios)
-        const [newUser] = await db.query(
-            'SELECT ID, NOMBRE_USUARIO as nombre_usuario, EMAIL, ROLE FROM usuarios WHERE ID = ?', 
-            [result.insertId]
-        );
-
-        // ✅ Generar token JWT
+        // Generar token JWT
         const token = jwt.sign(
-            { id: newUser[0].ID },
-            process.env.JWT_SECRET || 'token',
+            { id: result.insertId, role: 1 },
+            process.env.JWT_SECRET || 'secret',
             { expiresIn: '24h' }
         );
 
         return res.status(201).json({
-            success: true,
             token,
-            usuario: newUser[0]
+            user: {
+                ID: result.insertId,
+                NOMBRE_USUARIO: nombre_usuario.trim(),
+                EMAIL: email.toLowerCase().trim(),
+                ROLE: 1
+            }
         });
-
     } catch (error) {
         console.error('Error en registro:', error);
+        
+        if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+            return res.status(500).json({ 
+                error: 'Error de configuración: rol por defecto no existe',
+                details: 'El sistema no pudo asignar un rol al usuario'
+            });
+        }
+        
         return res.status(500).json({ 
-            success: false,
-            error: 'Error al registrar el usuario',
-            ...(process.env.NODE_ENV === 'development' && { 
-                details: error.message 
-            })
+            error: 'Error al registrar usuario',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
 
+// Rutas de cursos (protegidas con authenticateJWT)
+app.post('/api/cursos', authenticateJWT, upload.single('portada'), async (req, res) => {
+    try {
+        const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
+        const portada = req.file ? `/uploads/${req.file.filename}` : '';
+        
+        const [result] = await db.query(
+            `INSERT INTO cursos 
+            (nombre, descripcion, portada, categoria, precio, entrega, horario, ranking, opiniones, id_usuario)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?)`,
+            [nombre, descripcion, portada, categoria, precio, entrega, horario, req.user.ID]
+        );
+        
+        res.json({ success: true, id: result.insertId });
+    } catch (err) {
+        console.error('Error al crear curso:', err);
+        res.status(500).json({ error: 'Error al crear el curso' });
+    }
+});
 
 // Crear curso con imagen y asociar al usuario
-app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {
+app.post('/api/cursos', authenticateJWT, upload.single('portada'), async (req, res) => {
     const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
     const portada = req.file ? `/uploads/${req.file.filename}` : '';
     const id_usuario = req.user.ID;  // Obtener el ID del usuario autenticado
@@ -226,7 +343,7 @@ app.get('/api/cursos/:id', async (req, res) => {
 });
 
 // Editar curso
-app.put('/api/cursos/:id', validateToken, upload.single('portada'), async (req, res) => {
+app.put('/api/cursos/:id', authenticateJWT, upload.single('portada'), async (req, res) => {
     const idCurso = req.params.id;
     const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
     const portada = req.file ? `/uploads/${req.file.filename}` : null;
@@ -255,7 +372,7 @@ app.put('/api/cursos/:id', validateToken, upload.single('portada'), async (req, 
 });
 
 // Eliminar curso
-app.delete('/api/cursos/:id', validateToken, async (req, res) => {
+app.delete('/api/cursos/:id', authenticateJWT, async (req, res) => {
     const idCurso = req.params.id;
 
     try {
@@ -304,7 +421,7 @@ app.put('/api/cursos/:id/ranking', async (req, res) => {
 });
 
 // Agregar materiales al curso
-app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales', 10), async (req, res) => {
+app.post('/api/cursos/:id/materiales', authenticateJWT, upload.array('materiales', 10), async (req, res) => {
     const idCurso = req.params.id;
 
     try {
@@ -327,7 +444,7 @@ app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales',
 });
 
 // Eliminar materiales del curso
-app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
+app.delete('/api/cursos/:id/materiales', authenticateJWT, async (req, res) => {
     const idCurso = req.params.id;
     const { archivo } = req.body;
 
@@ -351,8 +468,21 @@ app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
 // Servir archivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Iniciar el servidor
-const PORT = 5000;
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+// Manejador de errores global
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Error interno del servidor' });
 });
+
+// Iniciar servidor
+initializeDatabase()
+    .then(() => {
+        const PORT = process.env.PORT || 5000;
+        app.listen(PORT, () => {
+            console.log(`Servidor corriendo en http://localhost:${PORT}`);
+        });
+    })
+    .catch(error => {
+        console.error('No se pudo iniciar el servidor:', error);
+        process.exit(1);
+    });

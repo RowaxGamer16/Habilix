@@ -6,6 +6,7 @@
   "dependencies": {
     "accepts": "^2.0.0",
     "append-field": "^1.0.0",
+    "bcrypt": "^5.1.1",
     "body-parser": "^2.2.0",
     "buffer-from": "^1.1.2",
     "busboy": "^1.6.0",
@@ -100,5 +101,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2"
+  }
 }
