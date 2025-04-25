@@ -12,22 +12,22 @@ import './Login.css';
 
 const Login: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({ 
-    nombre_usuario: '', 
-    email: '', 
-    password: '' 
+  const [registerData, setRegisterData] = useState({
+    nombre_usuario: '',
+    email: '',
+    password: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUpActive, setIsSignUpActive] = useState(false);
   const history = useHistory();
 
-  const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validateEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleLogin = async () => {
     const { email, password } = loginData;
 
-    // Validaciones
     if (!email || !password) {
       setError('Por favor ingrese su correo y contraseña');
       return;
@@ -42,13 +42,13 @@ const Login: React.FC = () => {
     try {
       const response = await fetch('http://localhost:5000/api/login', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({ 
-          email: email.trim().toLowerCase(), 
-          password: password.trim() 
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password: password.trim(),
         }),
       });
 
@@ -58,17 +58,12 @@ const Login: React.FC = () => {
         throw new Error(data.error || data.message || 'Credenciales incorrectas');
       }
 
-      // Almacenamiento seguro de datos
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.user));
       localStorage.setItem('userId', data.user.ID);
 
-      // 🔴 Redirección FORZADA (100% efectiva)
-      window.location.href = '/Inicio_Usuario'; 
-
-      // Opcional: Redirección SPA (sin recargar)
-      // history.push('/Inicio_Usuario');
-
+      // Redirigir usando history.push
+      history.push('/Inicio_Usuario');
     } catch (error: any) {
       console.error('Error en login:', error);
       setError(error.message || 'Error al iniciar sesión. Verifique sus datos.');
@@ -80,8 +75,7 @@ const Login: React.FC = () => {
   const handleRegister = async () => {
     const { nombre_usuario, email, password } = registerData;
 
-    // Validaciones
-    if (!nombre_usuario?.trim() || !email?.trim() || !password?.trim()) {
+    if (!nombre_usuario.trim() || !email.trim() || !password.trim()) {
       setError('Por favor complete todos los campos');
       return;
     }
@@ -103,42 +97,43 @@ const Login: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           nombre_usuario: nombre_usuario.trim(),
           email: email.trim().toLowerCase(),
-          password: password.trim()
+          password: password.trim(),
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMsg = data.error || 
-                        data.message || 
-                        data.errors?.map((e: any) => e.message).join(', ') || 
-                        'Error en el registro';
+        const errorMsg =
+          data.error ||
+          data.message ||
+          data.errors?.map((e: any) => e.message).join(', ') ||
+          'Error en el registro';
         throw new Error(errorMsg);
       }
 
-      // Almacenamiento y redirección
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.user));
-      
-      // Mensaje de éxito y cambio a formulario de login
+
       setError('¡Registro exitoso! Por favor inicie sesión');
       setIsSignUpActive(false);
-      setLoginData({...loginData, email: email.trim().toLowerCase()});
-      
+      setLoginData({ ...loginData, email: email.trim().toLowerCase() });
+      setRegisterData({ nombre_usuario: '', email: '', password: '' });
     } catch (error: any) {
       console.error('Error en registro:', error);
-      
+
       let errorMessage = error.message;
       if (error.message.includes('Failed to fetch')) {
         errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión.';
-      } else if (error.message.includes('already registered') || 
-                 error.message.includes('ya está registrado')) {
+      } else if (
+        error.message.includes('already registered') ||
+        error.message.includes('ya está registrado')
+      ) {
         errorMessage = 'El correo electrónico ya está registrado';
       }
 
@@ -153,10 +148,9 @@ const Login: React.FC = () => {
       <IonContent className="ion-padding">
         <div className="login-page">
           <div className={`container ${isSignUpActive ? 'right-panel-active' : ''}`}>
-            
-            {/* Formulario de Registro */}
+            {/* Registro */}
             <div className="form-container sign-up-container">
-              <form onSubmit={e => { e.preventDefault(); handleRegister(); }}>
+              <form onSubmit={(e) => { e.preventDefault(); handleRegister(); }}>
                 <h1>Crear Cuenta</h1>
                 <IonInput
                   label="Nombre de usuario"
@@ -164,9 +158,13 @@ const Login: React.FC = () => {
                   type="text"
                   placeholder="Ej: CarlosPerez"
                   value={registerData.nombre_usuario}
-                  onIonChange={e => setRegisterData({...registerData, nombre_usuario: e.detail.value!})}
+                  onIonChange={(e) =>
+                    setRegisterData({
+                      ...registerData,
+                      nombre_usuario: e.detail.value ?? '',
+                    })
+                  }
                   required
-                  minlength={3}
                 />
                 <IonInput
                   label="Correo electrónico"
@@ -174,7 +172,9 @@ const Login: React.FC = () => {
                   type="email"
                   placeholder="Ej: usuario@dominio.com"
                   value={registerData.email}
-                  onIonChange={e => setRegisterData({...registerData, email: e.detail.value!})}
+                  onIonChange={(e) =>
+                    setRegisterData({ ...registerData, email: e.detail.value ?? '' })
+                  }
                   required
                 />
                 <IonInput
@@ -182,13 +182,14 @@ const Login: React.FC = () => {
                   labelPlacement="floating"
                   type="password"
                   value={registerData.password}
-                  onIonChange={e => setRegisterData({...registerData, password: e.detail.value!})}
+                  onIonChange={(e) =>
+                    setRegisterData({ ...registerData, password: e.detail.value ?? '' })
+                  }
                   required
-                  minlength={5}
                 />
-                <IonButton 
-                  expand="block" 
-                  type="submit" 
+                <IonButton
+                  expand="block"
+                  type="submit"
                   disabled={loading}
                   className="ion-margin-top"
                 >
@@ -197,7 +198,7 @@ const Login: React.FC = () => {
               </form>
             </div>
 
-            {/* Formulario de Inicio de Sesión */}
+            {/* Login */}
             <div className="form-container sign-in-container">
               <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
                 <h1>Iniciar Sesión</h1>
@@ -207,7 +208,9 @@ const Login: React.FC = () => {
                   type="email"
                   placeholder="Ej: usuario@dominio.com"
                   value={loginData.email}
-                  onIonChange={(e) => setLoginData({...loginData, email: e.detail.value!})}
+                  onIonChange={(e) =>
+                    setLoginData({ ...loginData, email: e.detail.value ?? '' })
+                  }
                   required
                 />
                 <IonInput
@@ -215,12 +218,14 @@ const Login: React.FC = () => {
                   labelPlacement="floating"
                   type="password"
                   value={loginData.password}
-                  onIonChange={(e) => setLoginData({...loginData, password: e.detail.value!})}
+                  onIonChange={(e) =>
+                    setLoginData({ ...loginData, password: e.detail.value ?? '' })
+                  }
                   required
                 />
-                <IonButton 
-                  expand="block" 
-                  type="submit" 
+                <IonButton
+                  expand="block"
+                  type="submit"
                   disabled={loading}
                   className="ion-margin-top"
                 >
@@ -235,8 +240,8 @@ const Login: React.FC = () => {
                 <div className="overlay-panel overlay-left">
                   <h1>¡Bienvenido de vuelta!</h1>
                   <p>Para acceder a tu cuenta, inicia sesión con tus credenciales</p>
-                  <IonButton 
-                    fill="clear" 
+                  <IonButton
+                    fill="clear"
                     onClick={() => setIsSignUpActive(false)}
                     disabled={loading}
                   >
@@ -246,8 +251,8 @@ const Login: React.FC = () => {
                 <div className="overlay-panel overlay-right">
                   <h1>¡Hola, Bienvenido!</h1>
                   <p>Regístrate con tus datos para comenzar a usar la aplicación</p>
-                  <IonButton 
-                    fill="clear" 
+                  <IonButton
+                    fill="clear"
                     onClick={() => setIsSignUpActive(true)}
                     disabled={loading}
                   >
@@ -267,9 +272,9 @@ const Login: React.FC = () => {
             color={error.includes('éxito') ? 'success' : 'danger'}
             position="top"
           />
-          <IonLoading 
-            isOpen={loading} 
-            message={isSignUpActive ? "Registrando usuario..." : "Iniciando sesión..."} 
+          <IonLoading
+            isOpen={loading}
+            message={isSignUpActive ? 'Registrando usuario...' : 'Iniciando sesión...'}
           />
         </div>
       </IonContent>
