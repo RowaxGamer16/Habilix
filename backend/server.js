@@ -135,7 +135,7 @@ app.post('/api/register', [
 
         // Insertar nuevo usuario (sin hashear la contraseña)
         const [result] = await db.query(
-            'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE, FECHA_CREACION) VALUES (?, ?, ?, "user", NOW())',
+            'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE, FECHA_CREACION) VALUES (?, ?, ?, "1", NOW())',
             [nombre_usuario, email, password] // Contraseña en texto plano
         );
 
@@ -149,7 +149,7 @@ app.post('/api/register', [
                 ID: result.insertId,
                 NOMBRE_USUARIO: nombre_usuario,
                 EMAIL: email,
-                ROLE: 'user'
+                ROLE: 1
             }
         });
     } catch (error) {

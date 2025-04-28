@@ -10,7 +10,6 @@ import {
 import { useHistory } from 'react-router-dom';
 import './Login.css';
 
-// Configuración de la API
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 interface UserData {
@@ -22,12 +21,9 @@ interface UserData {
 
 const Login: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({
-    nombre_usuario: '',
-    email: '',
-    password: '',
-  });
+  const [registerData, setRegisterData] = useState({ nombre_usuario: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUpActive, setIsSignUpActive] = useState(false);
   const history = useHistory();
@@ -37,14 +33,13 @@ const Login: React.FC = () => {
   const handleLogin = async () => {
     const { email, password } = loginData;
 
-    // Validaciones
     if (!email || !password) {
       setError('Por favor ingrese su correo y contraseña');
       return;
     }
 
     if (!validateEmail(email)) {
-      setError('Por favor ingrese un correo válido (ejemplo: usuario@dominio.com)');
+      setError('Por favor ingrese un correo válido');
       return;
     }
 
@@ -53,9 +48,7 @@ const Login: React.FC = () => {
     try {
       const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
           password: password.trim(),
@@ -68,16 +61,14 @@ const Login: React.FC = () => {
         throw new Error(data.error || 'Credenciales incorrectas');
       }
 
-      // Almacenar datos de usuario
       localStorage.setItem('token', data.token);
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
       localStorage.setItem('userId', data.usuario.ID.toString());
 
-      // Redirigir al dashboard
       history.push('/Inicio_Usuario');
     } catch (error: any) {
       console.error('Error en login:', error);
-      setError(error.message || 'Error al iniciar sesión. Verifique sus datos.');
+      setError(error.message || 'Error al iniciar sesión.');
     } finally {
       setLoading(false);
     }
@@ -86,7 +77,6 @@ const Login: React.FC = () => {
   const handleRegister = async () => {
     const { nombre_usuario, email, password } = registerData;
 
-    // Validaciones
     if (!nombre_usuario.trim() || !email.trim() || !password.trim()) {
       setError('Por favor complete todos los campos');
       return;
@@ -107,9 +97,7 @@ const Login: React.FC = () => {
     try {
       const response = await fetch(`${API_URL}/api/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre_usuario: nombre_usuario.trim(),
           email: email.trim().toLowerCase(),
@@ -120,22 +108,20 @@ const Login: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMsg = data.error || 
-                        data.message || 
-                        (data.errors && data.errors.map((e: any) => e.message).join(', ')) || 
-                        'Error en el registro';
+        const errorMsg = data.error || data.message || 'Error en el registro';
         throw new Error(errorMsg);
       }
 
-      // Mostrar éxito y cambiar a formulario de login
-      setError('¡Registro exitoso! Por favor inicie sesión');
+      setSuccess('¡Registro exitoso! Ahora puede iniciar sesión.');
       setIsSignUpActive(false);
-      setLoginData({ ...loginData, email: email.trim().toLowerCase() });
+      setLoginData({ email: email.trim().toLowerCase(), password: '' });
       setRegisterData({ nombre_usuario: '', email: '', password: '' });
+
+      // Si quieres autologuearlo directamente, descomenta:
+      // await handleLogin();
     } catch (error: any) {
       console.error('Error en registro:', error);
-      
-      // Manejo de errores específicos
+
       let errorMessage = error.message;
       if (error.message.includes('Failed to fetch')) {
         errorMessage = 'No se pudo conectar con el servidor';
@@ -154,125 +140,92 @@ const Login: React.FC = () => {
       <IonContent className="ion-padding">
         <div className="login-page">
           <div className={`container ${isSignUpActive ? 'right-panel-active' : ''}`}>
-            
-            {/* Formulario de Registro */}
+            {/* Registro */}
             <div className="form-container sign-up-container">
               <form onSubmit={(e) => { e.preventDefault(); handleRegister(); }}>
                 <h1>Crear Cuenta</h1>
-                
+
                 <IonInput
                   label="Nombre de usuario"
                   labelPlacement="floating"
                   type="text"
                   placeholder="Ej: CarlosPerez"
                   value={registerData.nombre_usuario}
-                  onIonChange={(e) => setRegisterData({
-                    ...registerData,
-                    nombre_usuario: e.detail.value || '',
-                  })}
+                  onIonInput={(e) => setRegisterData({ ...registerData, nombre_usuario: e.detail.value || '' })}
                   required
                 />
-                
+
                 <IonInput
                   label="Correo electrónico"
                   labelPlacement="floating"
                   type="email"
                   placeholder="Ej: usuario@dominio.com"
                   value={registerData.email}
-                  onIonChange={(e) => setRegisterData({ 
-                    ...registerData, 
-                    email: e.detail.value || '' 
-                  })}
+                  onIonInput={(e) => setRegisterData({ ...registerData, email: e.detail.value || '' })}
                   required
                 />
-                
+
                 <IonInput
-                  label="Contraseña (mínimo 5 caracteres)"
+                  label="Contraseña"
                   labelPlacement="floating"
                   type="password"
+                  placeholder="Mínimo 5 caracteres"
                   value={registerData.password}
-                  onIonChange={(e) => setRegisterData({ 
-                    ...registerData, 
-                    password: e.detail.value || '' 
-                  })}
+                  onIonInput={(e) => setRegisterData({ ...registerData, password: e.detail.value || '' })}
                   required
                 />
-                
-                <IonButton
-                  expand="block"
-                  type="submit"
-                  disabled={loading}
-                  className="ion-margin-top"
-                >
+
+                <IonButton expand="block" type="submit" disabled={loading} className="ion-margin-top">
                   {loading ? 'Registrando...' : 'Registrarse'}
                 </IonButton>
               </form>
             </div>
 
-            {/* Formulario de Login */}
+            {/* Login */}
             <div className="form-container sign-in-container">
               <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
                 <h1>Iniciar Sesión</h1>
-                
+
                 <IonInput
                   label="Correo electrónico"
                   labelPlacement="floating"
                   type="email"
                   placeholder="Ej: usuario@dominio.com"
                   value={loginData.email}
-                  onIonChange={(e) => setLoginData({ 
-                    ...loginData, 
-                    email: e.detail.value || '' 
-                  })}
+                  onIonInput={(e) => setLoginData({ ...loginData, email: e.detail.value || '' })}
                   required
                 />
-                
+
                 <IonInput
                   label="Contraseña"
                   labelPlacement="floating"
                   type="password"
                   value={loginData.password}
-                  onIonChange={(e) => setLoginData({ 
-                    ...loginData, 
-                    password: e.detail.value || '' 
-                  })}
+                  onIonInput={(e) => setLoginData({ ...loginData, password: e.detail.value || '' })}
                   required
                 />
-                
-                <IonButton
-                  expand="block"
-                  type="submit"
-                  disabled={loading}
-                  className="ion-margin-top"
-                >
+
+                <IonButton expand="block" type="submit" disabled={loading} className="ion-margin-top">
                   {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                 </IonButton>
               </form>
             </div>
 
-            {/* Panel de Overlay */}
+            {/* Panel overlay */}
             <div className="overlay-container">
               <div className="overlay">
                 <div className="overlay-panel overlay-left">
                   <h1>¡Bienvenido de vuelta!</h1>
-                  <p>Para acceder a tu cuenta, inicia sesión con tus credenciales</p>
-                  <IonButton
-                    fill="clear"
-                    onClick={() => setIsSignUpActive(false)}
-                    disabled={loading}
-                  >
+                  <p>Para acceder a tu cuenta, inicia sesión</p>
+                  <IonButton fill="clear" onClick={() => setIsSignUpActive(false)} disabled={loading}>
                     Iniciar Sesión
                   </IonButton>
                 </div>
-                
+
                 <div className="overlay-panel overlay-right">
-                  <h1>¡Hola, Bienvenido!</h1>
-                  <p>Regístrate con tus datos para comenzar a usar la aplicación</p>
-                  <IonButton
-                    fill="clear"
-                    onClick={() => setIsSignUpActive(true)}
-                    disabled={loading}
-                  >
+                  <h1>¡Hola!</h1>
+                  <p>Regístrate para comenzar</p>
+                  <IonButton fill="clear" onClick={() => setIsSignUpActive(true)} disabled={loading}>
                     Registrarse
                   </IonButton>
                 </div>
@@ -280,16 +233,25 @@ const Login: React.FC = () => {
             </div>
           </div>
 
-          {/* Notificaciones */}
+          {/* Toasts */}
           <IonToast
             isOpen={!!error}
             message={error}
-            duration={5000}
+            duration={4000}
             onDidDismiss={() => setError('')}
-            color={error.includes('éxito') ? 'success' : 'danger'}
+            color="danger"
             position="top"
           />
-          
+
+          <IonToast
+            isOpen={!!success}
+            message={success}
+            duration={4000}
+            onDidDismiss={() => setSuccess('')}
+            color="success"
+            position="top"
+          />
+
           <IonLoading
             isOpen={loading}
             message={isSignUpActive ? 'Registrando usuario...' : 'Iniciando sesión...'}
