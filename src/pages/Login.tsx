@@ -39,49 +39,57 @@ const Login: React.FC = () => {
 
     // Validaciones
     if (!email || !password) {
-      setError('Por favor ingrese su correo y contraseña');
-      return;
+        setError('Por favor ingrese su correo y contraseña');
+        return;
     }
 
     if (!validateEmail(email)) {
-      setError('Por favor ingrese un correo válido (ejemplo: usuario@dominio.com)');
-      return;
+        setError('Por favor ingrese un correo válido (ejemplo: usuario@dominio.com)');
+        return;
     }
+
+    // Registrar los datos enviados para depuración
+    console.log('📤 Datos enviados desde el frontend:', { email, password });
 
     setLoading(true);
     
     try {
-      const response = await fetch(`${API_URL}/api/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password: password.trim(),
-        }),
-      });
+        const response = await fetch(`${API_URL}/api/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email.trim().toLowerCase(),
+                password: password.trim(),
+            }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Credenciales incorrectas');
-      }
+        // Registrar la respuesta del backend
+        console.log('📥 Respuesta del backend:', data);
 
-      // Almacenar datos de usuario
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('usuario', JSON.stringify(data.usuario));
-      localStorage.setItem('userId', data.usuario.ID.toString());
+        if (!response.ok) {
+            throw new Error(data.error || 'Credenciales incorrectas');
+        }
 
-      // Redirigir al dashboard
-      history.push('/Inicio_Usuario');
+        // Almacenar datos del usuario
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('usuario', JSON.stringify(data.user));
+        localStorage.setItem('userId', data.user.ID.toString());
+
+        console.log('✅ Login exitoso, redirigiendo...');
+
+        // Redirigir al dashboard
+        history.push('/Inicio_Usuario');
     } catch (error: any) {
-      console.error('Error en login:', error);
-      setError(error.message || 'Error al iniciar sesión. Verifique sus datos.');
+        console.error('❌ Error en login:', error);
+        setError(error.message || 'Error al iniciar sesión. Verifique sus datos.');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   const handleRegister = async () => {
     const { nombre_usuario, email, password } = registerData;

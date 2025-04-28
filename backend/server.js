@@ -72,95 +72,128 @@ const validateToken = async (req, res, next) => {
 // Rutas de autenticación
 app.post('/api/login', [
     body('email').isEmail().normalizeEmail(),
-    body('password').isLength({ min: 5 }),
+    body('password').isLength({ min: 1 })
 ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-    const { email, password } = req.body;
-    console.log('📩 Intento de login:', email);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
 
     try {
-        const [results] = await db.query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
+        const { email, password } = req.body;
+        
+        // Registrar los datos recibidos para depuración
+        console.log('📥 Datos recibidos en login:', { email, password });
 
-        if (results.length === 0 || results[0].PASSWORD !== password) {
-            console.log('❌ Login fallido');
-            return res.status(401).json({ error: 'Correo o contraseña incorrectos' });
+        // Normalizar el email y la contraseña
+        const emailTrimmed = email.toLowerCase().trim();
+        const passwordTrimmed = password.trim();
+
+        // Registrar los datos procesados
+        console.log('📝 Datos procesados:', { emailTrimmed, passwordTrimmed });
+
+        // Consultar el usuario en la base de datos
+        const [users] = await db.query(
+            'SELECT * FROM usuarios WHERE EMAIL = ?', 
+            [emailTrimmed]
+        );
+        
+        // Registrar el resultado de la consulta
+        console.log('🔍 Resultado de la consulta:', users);
+
+        // Verificar si el usuario existe
+        if (!users || users.length === 0) {
+            console.log('❌ Usuario no encontrado');
+            return res.status(401).json({ error: 'Credenciales incorrectas' });
         }
 
-        const user = results[0];
-        const token = jwt.sign({ id: user.ID }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
+        const user = users[0];
 
-        console.log('✅ Login exitoso');
-        res.json({
+        // Registrar la contraseña almacenada para depuración
+        console.log('🔐 Contraseña almacenada:', user.PASSWORD);
+
+        // Comparar las contraseñas (texto plano)
+        if (user.PASSWORD !== passwordTrimmed) {
+            console.log('❌ Contraseña incorrecta');
+            return res.status(401).json({ error: 'Credenciales incorrectas' });
+        }
+
+        // Generar token JWT
+        const token = jwt.sign(
+            { id: user.ID, role: user.ROLE },
+            process.env.JWT_SECRET || 'secret',
+            { expiresIn: '1h' }
+        );
+
+        console.log('✅ Login exitoso para usuario:', user.NOMBRE_USUARIO);
+
+        return res.json({
             token,
-            usuario: {
+            user: {
                 ID: user.ID,
                 NOMBRE_USUARIO: user.NOMBRE_USUARIO,
                 EMAIL: user.EMAIL,
-                ROLE: user.ROLE,
-                TELEFONO: user.TELEFONO,
-                FECHA_CREACION: user.FECHA_CREACION
+                ROLE: user.ROLE
             }
         });
     } catch (error) {
         console.error('❌ Error en login:', error);
-        res.status(500).json({ error: 'Error del servidor' });
+        return res.status(500).json({ error: 'Error del servidor' });
     }
 });
 
 
+
 app.post('/api/register', [
-    body('nombre_usuario').isLength({ min: 3 }).withMessage('El nombre debe tener al menos 3 caracteres'),
-    body('email').isEmail().normalizeEmail().withMessage('Ingrese un email válido'),
-    body('password').isLength({ min: 5 }).withMessage('La contraseña debe tener al menos 5 caracteres'),
+    body('nombre_usuario').notEmpty().trim().escape(),
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 5 })
 ], async (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-            error: 'Error de validación',
-            details: errors.array().map(err => err.msg) 
-        });
-    }
-
-    const { nombre_usuario, email, password } = req.body;
-    console.log('📩 Intento de registro:', email);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
+        const { nombre_usuario, email, password } = req.body;
+
+        // Asegúrate de hacer trim en la contraseña
+        const passwordTrimmed = password.trim();
+
         // Verificar si el email ya existe
-        const [existingUsers] = await db.query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
-        if (existingUsers.length > 0) {
-            return res.status(400).json({ error: 'El correo ya está registrado' });
+        const [existing] = await db.query('SELECT ID FROM usuarios WHERE EMAIL = ?', [email.toLowerCase().trim()]);
+        if (existing[0]) {
+            return res.status(409).json({ error: 'El email ya está registrado' });
         }
 
-        // Insertar nuevo usuario (sin hashear la contraseña)
+        // Insertar nuevo usuario
         const [result] = await db.query(
-            'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE, FECHA_CREACION) VALUES (?, ?, ?, "user", NOW())',
-            [nombre_usuario, email, password] // Contraseña en texto plano
+            'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD) VALUES (?, ?, ?)', 
+            [nombre_usuario.trim(), email.toLowerCase().trim(), passwordTrimmed]
         );
 
-        // Crear token
-        const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
+        // Generar token JWT
+        const token = jwt.sign(
+            { id: result.insertId, role: 1 }, // Role 1 por defecto
+            process.env.JWT_SECRET || 'secret',
+            { expiresIn: '24h' }
+        );
 
-        console.log('✅ Usuario registrado:', result.insertId);
-        res.json({
+        return res.status(201).json({
             token,
-            usuario: {
+            user: {
                 ID: result.insertId,
-                NOMBRE_USUARIO: nombre_usuario,
-                EMAIL: email,
-                ROLE: 'user'
+                NOMBRE_USUARIO: nombre_usuario.trim(),
+                EMAIL: email.toLowerCase().trim(),
+                ROLE: 1
             }
         });
     } catch (error) {
-        console.error('❌ Error en registro:', error);
-        res.status(500).json({ 
-            error: 'Error del servidor al registrar usuario',
+        console.error('Error en registro:', error);
+        return res.status(500).json({ 
+            error: 'Error al registrar usuario',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
-
 
 // Ruta para obtener información del usuario autenticado
 app.get('/api/usuario', validateToken, async (req, res) => {
