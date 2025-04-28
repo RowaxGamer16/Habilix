@@ -48,9 +48,8 @@ const Cursos: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const [nuevoCurso, setNuevoCurso] = useState<Omit<Curso, 'id' | 'ranking'>>({
+  const [nuevoCurso, setNuevoCurso] = useState({
     nombre: '',
     descripcion: '',
     profesor: '',
@@ -70,7 +69,7 @@ const Cursos: React.FC = () => {
         setCursos(data);
       } catch (err) {
         setError('No se pudieron cargar los cursos');
-        setShowAlert(true);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -81,10 +80,7 @@ const Cursos: React.FC = () => {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      setPreviewImage(URL.createObjectURL(file));
-    }
+    if (file) setSelectedImage(file);
   };
 
   const agregarCurso = async () => {
@@ -103,14 +99,18 @@ const Cursos: React.FC = () => {
       }
 
       const formData = new FormData();
-      for (const key in nuevoCurso) {
-        formData.append(key, (nuevoCurso as any)[key]);
-      }
+      formData.append('nombre', nuevoCurso.nombre);
+      formData.append('descripcion', nuevoCurso.descripcion);
+      formData.append('profesor', nuevoCurso.profesor);
+      formData.append('categoria', nuevoCurso.categoria);
+      formData.append('precio', String(nuevoCurso.precio));
+      formData.append('entrega', nuevoCurso.entrega);
+      formData.append('horario', nuevoCurso.horario);
       if (selectedImage) formData.append('portada', selectedImage);
 
       const response = await fetch(`${API_URL}/cursos`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
 
@@ -119,32 +119,19 @@ const Cursos: React.FC = () => {
       const data = await response.json();
       setCursos(prev => [...prev, { id: data.id, ...nuevoCurso, ranking: 0 }]);
       setShowModalCrearCurso(false);
-      resetForm();
+      setNuevoCurso({ nombre: '', descripcion: '', profesor: '', portada: '', categoria: '', precio: 0, entrega: 'Virtual', horario: 'Flexible' });
+      setSelectedImage(null);
     } catch (err) {
       setError('Error al crear el curso');
       setShowAlert(true);
+      console.error(err);
     }
   };
 
-  const resetForm = () => {
-    setNuevoCurso({
-      nombre: '',
-      descripcion: '',
-      profesor: '',
-      portada: '',
-      categoria: '',
-      precio: 0,
-      entrega: 'Virtual',
-      horario: 'Flexible'
-    });
-    setSelectedImage(null);
-    setPreviewImage(null);
-  };
-
   const cursosFiltrados = cursos.filter(curso =>
-    curso.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
-    curso.descripcion.toLowerCase().includes(searchText.toLowerCase()) ||
-    curso.profesor.toLowerCase().includes(searchText.toLowerCase())
+    (curso.nombre || '').toLowerCase().includes(searchText.toLowerCase()) ||
+    (curso.descripcion || '').toLowerCase().includes(searchText.toLowerCase()) ||
+    (curso.profesor || '').toLowerCase().includes(searchText.toLowerCase())
   );
 
   const handleVerCurso = (cursoId: number) => {
@@ -192,10 +179,10 @@ const Cursos: React.FC = () => {
               <IonCard key={curso.id} className="course-card">
                 <div className="image-container">
                   <img
-                    src={curso.portada}
+                    src={curso.portada || ''}
                     alt={curso.nombre}
                     className="course-image"
-                    onError={e => { e.currentTarget.src = ''; }}
+                    onError={(e) => (e.currentTarget.src = '')}
                   />
                   {curso.categoria && (
                     <span className={`course-badge ${curso.categoria.toLowerCase().replace(/\s+/g, '-')}`}>
@@ -212,10 +199,10 @@ const Cursos: React.FC = () => {
                     <span className="creator-name">{curso.profesor}</span>
                     <div className="rating">
                       <IonIcon icon={star} className="star-icon" />
-                      <span>{curso.ranking ?? 0}</span>
+                      <span>{curso.ranking || 0}</span>
                     </div>
                     <div className="price">
-                      <span>{curso.precio > 0 ? `$${curso.precio}` : 'Gratis'}</span>
+                      <span>${curso.precio || 'Gratis'}</span>
                     </div>
                   </div>
 
@@ -228,7 +215,6 @@ const Cursos: React.FC = () => {
           )}
         </div>
 
-        {/* Modal Crear Curso */}
         <IonModal isOpen={showModalCrearCurso} onDidDismiss={() => setShowModalCrearCurso(false)}>
           <IonContent className="ion-padding">
             <h2>Crear Nuevo Curso</h2>
@@ -238,7 +224,7 @@ const Cursos: React.FC = () => {
                 <IonCol>
                   <IonItem>
                     <IonLabel position="floating">Nombre del curso</IonLabel>
-                    <IonInput value={nuevoCurso.nombre} onIonChange={e => setNuevoCurso({ ...nuevoCurso, nombre: e.detail.value! })} />
+                    <IonInput value={nuevoCurso.nombre} onIonChange={e => setNuevoCurso({ ...nuevoCurso, nombre: e.detail.value || '' })} />
                   </IonItem>
                 </IonCol>
               </IonRow>
@@ -247,7 +233,7 @@ const Cursos: React.FC = () => {
                 <IonCol>
                   <IonItem>
                     <IonLabel position="floating">Descripción</IonLabel>
-                    <IonTextarea value={nuevoCurso.descripcion} onIonChange={e => setNuevoCurso({ ...nuevoCurso, descripcion: e.detail.value! })} rows={4} />
+                    <IonTextarea value={nuevoCurso.descripcion} onIonChange={e => setNuevoCurso({ ...nuevoCurso, descripcion: e.detail.value || '' })} rows={4} />
                   </IonItem>
                 </IonCol>
               </IonRow>
@@ -256,7 +242,7 @@ const Cursos: React.FC = () => {
                 <IonCol>
                   <IonItem>
                     <IonLabel position="floating">Profesor</IonLabel>
-                    <IonInput value={nuevoCurso.profesor} onIonChange={e => setNuevoCurso({ ...nuevoCurso, profesor: e.detail.value! })} />
+                    <IonInput value={nuevoCurso.profesor} onIonChange={e => setNuevoCurso({ ...nuevoCurso, profesor: e.detail.value || '' })} />
                   </IonItem>
                 </IonCol>
               </IonRow>
@@ -268,7 +254,7 @@ const Cursos: React.FC = () => {
                   <IonButton expand="block" onClick={() => document.getElementById('uploadFile')?.click()} color="primary">
                     Seleccionar Imagen
                   </IonButton>
-                  {previewImage && <img src={previewImage} alt="preview" style={{ width: '100%', marginTop: '10px' }} />}
+                  {selectedImage && <p>{selectedImage.name}</p>}
                 </IonCol>
               </IonRow>
 
@@ -276,17 +262,13 @@ const Cursos: React.FC = () => {
                 <IonCol size="6">
                   <IonItem>
                     <IonLabel position="floating">Categoría</IonLabel>
-                    <IonInput value={nuevoCurso.categoria} onIonChange={e => setNuevoCurso({ ...nuevoCurso, categoria: e.detail.value! })} />
+                    <IonInput value={nuevoCurso.categoria} onIonChange={e => setNuevoCurso({ ...nuevoCurso, categoria: e.detail.value || '' })} />
                   </IonItem>
                 </IonCol>
                 <IonCol size="6">
                   <IonItem>
                     <IonLabel position="floating">Precio</IonLabel>
-                    <IonInput
-                      type="number"
-                      value={nuevoCurso.precio}
-                      onIonChange={e => setNuevoCurso({ ...nuevoCurso, precio: parseFloat(e.detail.value!) || 0 })}
-                    />
+                    <IonInput type="number" value={nuevoCurso.precio} onIonChange={e => setNuevoCurso({ ...nuevoCurso, precio: Number(e.detail.value) || 0 })} />
                   </IonItem>
                 </IonCol>
               </IonRow>
@@ -301,13 +283,7 @@ const Cursos: React.FC = () => {
           </IonContent>
         </IonModal>
 
-            <IonAlert 
-      isOpen={showAlert} 
-      onDidDismiss={() => setShowAlert(false)} 
-      message={error || 'Ocurrió un error desconocido'} 
-      buttons={['OK']} 
-    />
-
+        <IonAlert isOpen={showAlert} onDidDismiss={() => setShowAlert(false)} header="Error" message={error || ''} buttons={['OK']} />
       </IonContent>
     </IonPage>
   );

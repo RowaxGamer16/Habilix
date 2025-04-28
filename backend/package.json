@@ -4,8 +4,10 @@
   "version": "1.0.0",
   "main": "server.js",
   "dependencies": {
+    "@ionic/react": "^8.5.5",
     "accepts": "^2.0.0",
     "append-field": "^1.0.0",
+    "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "body-parser": "^2.2.0",
     "buffer-from": "^1.1.2",
