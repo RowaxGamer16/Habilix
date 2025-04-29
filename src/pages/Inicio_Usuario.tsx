@@ -87,7 +87,6 @@ const Inicio_Usuario: React.FC = () => {
   };
 
   useEffect(() => {
-
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('token'); // Obtener token
@@ -101,7 +100,7 @@ const Inicio_Usuario: React.FC = () => {
 
         setUserId(storedUserId); // Guardar el ID en el estado
 
-        const response = await fetch(`http://localhost:5000/api/usuario/${storedUserId}`, {
+        const response = await fetch('http://localhost:5000/api/usuario', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -117,8 +116,8 @@ const Inicio_Usuario: React.FC = () => {
         console.log('Datos del usuario:', data); // Verifica la respuesta del backend
 
         // Asegúrate de que el backend devuelva el nombre en la propiedad correcta
-        if (data.NOMBRE_USUARIO) {
-          setUserName(data.NOMBRE_USUARIO); // Guardar el nombre del usuario
+        if (data.usuario.NOMBRE_USUARIO) {
+          setUserName(data.usuario.NOMBRE_USUARIO); // Guardar el nombre del usuario
         } else {
           setError('Nombre de usuario no encontrado en la respuesta');
         }
@@ -129,6 +128,8 @@ const Inicio_Usuario: React.FC = () => {
         setIsLoading(false);
       }
     };
+
+    fetchUserData();
 
     setLoading(true);
     setTimeout(() => {
@@ -221,9 +222,7 @@ const Inicio_Usuario: React.FC = () => {
             {isLoading ? (
               <IonSpinner name="crescent" />
             ) : error ? (
-              <div>
-                <h2>{error}</h2>
-              </div>
+              <IonCardTitle>{error}</IonCardTitle>
             ) : (
               <IonCardTitle>{userName}</IonCardTitle>
             )}

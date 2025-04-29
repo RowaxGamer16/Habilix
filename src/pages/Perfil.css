@@ -1,189 +1,279 @@
-/* Perfil.css - Estilo Pro con animaciones, sombras suaves y diseño neumórfico */
-
 :root {
-  --perfil-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  --perfil-border-radius: 16px;
+  --perfil-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --perfil-border-radius: 20px;
   --perfil-transition: all 0.3s ease-in-out;
-  --perfil-gradient: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-secondary));
-  --perfil-gradient-hover: linear-gradient(135deg, var(--ion-color-primary), #f0ad4e);
-  --perfil-background-color: #f7f7f7;
-  --perfil-dark-bg: #f4f4f4;
-  --perfil-light-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --perfil-dark-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  --perfil-primary-color: var(--ion-color-primary);
+  --perfil-gradient: linear-gradient(135deg, #6366f1, #a855f7);
+  --perfil-gradient-hover: linear-gradient(135deg, #4f46e5, #ec4899);
+  --perfil-background-color: #f8fafc;
+  --perfil-dark-bg: #e2e8f0;
+  --perfil-light-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+  --perfil-dark-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  --perfil-primary-color: #6366f1;
+  --perfil-accent-color: #ec4899;
+  --perfil-button-color: #005bff; /* Color azul del botón Editar Perfil */
 }
 
-/* Animación fade-in */
+/* Animaciones */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 .profile-content {
-  animation: fadeIn 0.7s ease forwards;
+  animation: fadeIn 0.8s ease forwards;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh; /* Hace que el contenedor ocupe toda la altura de la pantalla */
-  text-align: center;
-  padding: 2rem;
+  min-height: 100vh;
+  padding: 2rem 1rem;
   background: var(--perfil-background-color);
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
-/* ============================= */
-/* Cabecera del perfil          */
-/* ============================= */
+.profile-toolbar {
+  --border-radius: 0 0 20px 20px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Cabecera del perfil */
 .profile-header {
   text-align: center;
-  margin: 2rem 0 1rem 0;
-  background: #fff;
+  margin: 2rem auto; /* Centrado con auto */
+  background: #ffffff;
   border-radius: var(--perfil-border-radius);
   padding: 2rem;
   box-shadow: var(--perfil-dark-shadow);
-  transition: var(--perfil-transition);
-  background: var(--perfil-light-shadow);
+  animation: scaleIn 0.5s ease forwards;
+  position: relative;
+  width: 100%;
+  max-width: 600px; /* Igual que profile-info-card para alineación */
 }
 
 .profile-avatar {
-  width: 130px;
-  height: 130px;
-  margin: 0 auto 1rem auto;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 1.2rem;
   border-radius: 50%;
-  border: 4px solid var(--perfil-primary-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease;
+  border: 5px solid var(--perfil-primary-color);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
+
 .profile-avatar:hover {
-  transform: scale(1.05);
+  transform: scale(1.08);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.avatar-fallback {
+  width: 100%;
+  height: 100%;
+  background: var(--perfil-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  position: absolute;
+  z-index: 1;
 }
 
 .profile-name {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  margin: 0.3rem 0;
-  color: var(--ion-color-dark);
+  margin: 0.4rem 0;
+  color: #1f2937;
+  background: linear-gradient(to right, var(--perfil-primary-color), var(--perfil-accent-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .profile-role {
-  font-size: 1rem;
-  font-style: italic;
-  color: var(--ion-color-medium);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-/* ============================= */
-/* Tarjeta de información       */
-/* ============================= */
+.status-badge {
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.8rem;
+}
+
+/* Tarjeta de información */
 .profile-info-card {
   width: 100%;
-  max-width: 540px;
-  margin: 1rem auto;
-  padding: 1rem 1rem 1.5rem;
+  max-width: 600px;
+  margin: 1.5rem auto;
+  padding: 1.5rem;
   border-radius: var(--perfil-border-radius);
-  box-shadow: var(--perfil-shadow);
+  box-shadow: var(--perfil-light-shadow);
   background: #ffffff;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: fadeIn 0.9s ease forwards;
+}
+
+.profile-info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--perfil-dark-shadow);
 }
 
 .profile-info-header {
   text-align: center;
-  padding-top: 1rem;
+  padding: 1rem 0;
 }
+
 .profile-info-header h2 {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 600;
-  color: var(--perfil-primary-color);
+  background: var(--perfil-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-/* Elementos individuales */
-.profile-info-card ion-item {
-  --background: transparent;
+.profile-item {
+  --padding-start: 1rem;
   --inner-padding-end: 1rem;
-  --min-height: 64px;
+  margin: 0.5rem 0;
+  border-radius: 12px;
   transition: var(--perfil-transition);
 }
-.profile-info-card ion-item:hover {
-  background: rgba(0, 0, 0, 0.03);
+
+.profile-item:hover {
+  background: rgba(99, 102, 241, 0.05);
+  transform: translateX(5px);
 }
 
-.profile-info-card h3 {
-  font-size: 1rem;
-  margin-bottom: 0.2rem;
-  color: var(--ion-color-dark);
+.profile-item h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #1f2937;
 }
 
-.profile-info-card p {
+.profile-item p {
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--ion-color-medium);
+  font-size: 1rem;
+  color: #4b5563;
 }
 
-/* ============================= */
-/* Botones de acción            */
-/* ============================= */
+/* Botones de acción */
 .profile-actions {
   width: 100%;
-  max-width: 540px;
-  margin-top: 1rem;
+  max-width: 600px;
+  margin: 2rem auto;
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centra los botones horizontalmente */
-  justify-content: center; /* Centra los botones verticalmente */
   gap: 1rem;
-  padding: 0 1rem 2rem;
+  padding: 0 1rem;
 }
 
-.profile-button {
-  font-weight: bold;
-  font-size: 1rem;
-  background: var(--perfil-gradient);
-  color: white;
-  border-radius: 12px;
-  padding: 0.8rem 1rem;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.profile-button:hover {
-  transform: scale(1.03);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
-
-/* ============================= */
-/* Botón de editar              */
-/* ============================= */
 .edit-button {
-  font-weight: bold;
-  font-size: 1rem;
-  background: var(--perfil-gradient);
+  font-weight: 600;
+  font-size: 1.1rem;
+  background: var(--perfil-button-color); /* Usar el color azul */
   color: white;
-  border-radius: 12px;
-  padding: 0.8rem 1rem;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-}
-.edit-button:hover {
-  transform: scale(1.03);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  background: var(--perfil-gradient-hover);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: var(--perfil-transition);
 }
 
-/* ============================= */
-/* Botón de cerrar sesión       */
-/* ============================= */
-.logout-button {
-  font-weight: bold;
-  font-size: 1rem;
-  border-radius: 12px;
-  border: 2px solid var(--ion-color-danger);
-  color: var(--ion-color-danger);
-  padding: 0.8rem 1rem;
-  background: transparent;
-  transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
+.edit-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  background: var(--perfil-button-color);
+  filter: brightness(1.1); /* Efecto de brillo al pasar el mouse */
 }
-.logout-button:hover {
-  background: var(--ion-color-danger);
+
+.logout-button {
+  font-weight: 600;
+  font-size: 1.1rem;
+  border-radius: 14px;
+  background: red; /* Usar el mismo color azul */
   color: white;
-  transform: scale(1.03);
+  padding: 1rem;
+  transition: var(--perfil-transition);
+  border: none; /* Eliminar el borde */
+}
+
+.logout-button:hover {
+  background: rgb(139, 26, 26);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  filter: brightness(1.1); /* Efecto de brillo al pasar el mouse */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .profile-header {
+    padding: 1.5rem;
+    margin: 1.5rem auto; /* Mantener centrado */
+  }
+
+  .profile-avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .profile-name {
+    font-size: 1.8rem;
+  }
+
+  .profile-info-card {
+    padding: 1rem;
+  }
+
+  .profile-info-header h2 {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-content {
+    padding: 1rem;
+  }
+
+  .profile-header {
+    padding: 1rem;
+    margin: 1rem auto; /* Mantener centrado */
+  }
+
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+  }
+
+  .profile-name {
+    font-size: 1.5rem;
+  }
+
+  .profile-info-card {
+    margin: 1rem auto;
+  }
+
+  .edit-button, .logout-button {
+    font-size: 1rem;
+    padding: 0.8rem;
+  }
+}
+
+/* Custom loading */
+.custom-loading {
+  --background: rgba(255, 255, 255, 0.95);
+  --spinner-color: var(--perfil-primary-color);
 }
