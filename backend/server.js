@@ -52,7 +52,7 @@ const validateToken = async (req, res, next) => {
     console.log('🔐 Token recibido:', token);
   
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
       console.log('✅ Token decodificado:', decoded);
   
       const [results] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [decoded.id]);
@@ -67,7 +67,7 @@ const validateToken = async (req, res, next) => {
         details: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
     }
-  };
+};
 
 // Rutas de autenticación
 app.post('/api/login', [
@@ -219,15 +219,16 @@ app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res
     const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
     const portada = req.file ? `/uploads/${req.file.filename}` : '';
     const id_usuario = req.user.ID;
+    const profesor = req.user.NOMBRE_USUARIO; // Usamos el nombre del usuario autenticado como profesor
 
-    console.log('📚 Creando curso:', { nombre, id_usuario });
+    console.log('📚 Creando curso:', { nombre, id_usuario, profesor });
 
     try {
         const query = `
-            INSERT INTO cursos (nombre, descripcion, portada, categoria, precio, entrega, horario, ranking, opiniones, id_usuario, imagenes_materiales)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, '[]')
+            INSERT INTO cursos (nombre, descripcion, portada, categoria, precio, entrega, horario, ranking, opiniones, id_usuario, imagenes_materiales, profesor)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, '[]', ?)
         `;
-        const [result] = await db.query(query, [nombre, descripcion, portada, categoria, precio, entrega, horario, id_usuario]);
+        const [result] = await db.query(query, [nombre, descripcion, portada, categoria, precio, entrega, horario, id_usuario, profesor]);
 
         res.json({ success: true, id: result.insertId });
         console.log('✅ Curso creado:', result.insertId);
