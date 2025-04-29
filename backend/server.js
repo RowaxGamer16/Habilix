@@ -122,7 +122,7 @@ app.post('/api/login', [
         const token = jwt.sign(
             { id: user.ID, role: user.ROLE },
             process.env.JWT_SECRET || 'secret',
-            { expiresIn: '24h' }
+            { expiresIn: '1h' }
         );
 
         console.log('✅ Login exitoso para usuario:', user.NOMBRE_USUARIO);
