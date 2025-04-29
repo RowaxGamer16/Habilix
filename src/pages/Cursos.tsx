@@ -265,12 +265,6 @@ const Cursos: React.FC = () => {
                     <IonInput value={nuevoCurso.categoria} onIonChange={e => setNuevoCurso({ ...nuevoCurso, categoria: e.detail.value || '' })} />
                   </IonItem>
                 </IonCol>
-                <IonCol size="6">
-                  <IonItem>
-                    <IonLabel position="floating">Precio</IonLabel>
-                    <IonInput type="number" value={nuevoCurso.precio} onIonChange={e => setNuevoCurso({ ...nuevoCurso, precio: Number(e.detail.value) || 0 })} />
-                  </IonItem>
-                </IonCol>
               </IonRow>
 
               <IonRow>

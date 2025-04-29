@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonButton, IonIcon, IonCard, IonCardContent, IonLabel, IonItem,
-  IonItemDivider, IonLoading, IonToast, IonList, IonThumbnail, IonImg
+  IonItemDivider, IonLoading, IonToast, IonList, IonThumbnail
 } from '@ionic/react';
 import { useParams, useHistory } from 'react-router-dom';
 import { star, cloudUpload, trash, create, arrowBack, document } from 'ionicons/icons';
@@ -52,6 +52,7 @@ const CursoDetalle: React.FC = () => {
   const [toastMsg, setToastMsg] = useState('');
   const [mostrarToast, setMostrarToast] = useState(false);
   const [esCreador, setEsCreador] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false); // Estado para rastrear eliminación
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const token = localStorage.getItem('token');
@@ -70,6 +71,9 @@ const CursoDetalle: React.FC = () => {
 
   useEffect(() => {
     const fetchCurso = async () => {
+      // Evitar cargar datos si el curso ya fue eliminado
+      if (isDeleted) return;
+
       try {
         const response = await fetch(`${API_URL}/cursos/${id}`, {
           headers: {
@@ -77,20 +81,20 @@ const CursoDetalle: React.FC = () => {
           }
         });
         if (!response.ok) throw new Error('Error al obtener el curso');
-        
+
         const data = await response.json();
         setCurso(data);
-        
+
         // Cargar materiales del servidor
-        const materialesServidor = typeof data.imagenes_materiales === 'string' 
-          ? JSON.parse(data.imagenes_materiales || '[]') 
+        const materialesServidor = typeof data.imagenes_materiales === 'string'
+          ? JSON.parse(data.imagenes_materiales || '[]')
           : data.imagenes_materiales || [];
         setMaterialesServidor(materialesServidor);
-        
+
         // Cargar materiales locales
         const materialesLocales = cargarMaterialesLocales(id);
         setMateriales(materialesLocales);
-        
+
         // Verificar si el usuario actual es el creador
         if (usuario) {
           const esCreadorVerificado = Number(usuario.ID) === Number(data.id_usuario);
@@ -106,7 +110,7 @@ const CursoDetalle: React.FC = () => {
     };
 
     fetchCurso();
-  }, [id, usuario, token]);
+  }, [id, usuario, token, isDeleted]);
 
   const subirMateriales = async () => {
     if (!archivos || archivos.length === 0) {
@@ -121,7 +125,7 @@ const CursoDetalle: React.FC = () => {
 
     Array.from(archivos).forEach(file => {
       formData.append('materiales', file);
-      
+
       const materialLocal: MaterialLocal = {
         nombre: file.name,
         url: URL.createObjectURL(file),
@@ -135,9 +139,7 @@ const CursoDetalle: React.FC = () => {
     try {
       const response = await fetch(`${API_URL}/cursos/${id}/materiales`, {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
 
@@ -145,12 +147,12 @@ const CursoDetalle: React.FC = () => {
 
       if (result.success) {
         setMaterialesServidor(result.nuevosMateriales || []);
-        
+
         const materialesActuales = cargarMaterialesLocales(id);
         const materialesActualizados = [...materialesActuales, ...nuevosMaterialesLocales];
         guardarMaterialesLocales(id, materialesActualizados);
         setMateriales(materialesActualizados);
-        
+
         setToastMsg('Materiales subidos correctamente');
       } else {
         setToastMsg(result.error || 'Error al subir materiales al servidor');
@@ -170,7 +172,7 @@ const CursoDetalle: React.FC = () => {
 
     try {
       const esMaterialLocal = typeof material !== 'string';
-      
+
       if (esMaterialLocal) {
         const materialLocal = material as MaterialLocal;
         const nuevosMateriales = materiales.filter(m => m.url !== materialLocal.url);
@@ -220,9 +222,13 @@ const CursoDetalle: React.FC = () => {
 
       if (result.success) {
         localStorage.removeItem(`${LOCAL_STORAGE_KEY}${id}`);
+        setIsDeleted(true); // Marcar el curso como eliminado
+        setCurso(null); // Limpiar el estado del curso
         setToastMsg('Curso eliminado correctamente');
         setMostrarToast(true);
-        setTimeout(() => history.push('/cursos'), 1500);
+        // Redirigir a la lista de cursos y recargar la página
+        history.push('/cursos');
+        window.location.reload(); // Recargar la página para refrescar la lista de cursos
       } else {
         setToastMsg(result.error || 'Error al eliminar curso');
         setMostrarToast(true);
@@ -240,6 +246,11 @@ const CursoDetalle: React.FC = () => {
     if (tipo.includes('word')) return <IonIcon icon={document} size="large" color="secondary" />;
     return <IonIcon icon={document} size="large" />;
   };
+
+  if (isDeleted) {
+    // Evitar renderizar cualquier cosa si el curso ya fue eliminado
+    return null;
+  }
 
   if (loading) {
     return (
@@ -281,9 +292,9 @@ const CursoDetalle: React.FC = () => {
       <IonContent className="ion-padding">
         {curso.portada && (
           <div className="ion-text-center ion-margin-bottom">
-            <img 
-              src={`${API_URL}${curso.portada}`} 
-              alt={`Portada de ${curso.nombre}`} 
+            <img
+              src={`${API_URL}${curso.portada}`}
+              alt={`Portada de ${curso.nombre}`}
               style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }}
             />
           </div>
@@ -294,7 +305,7 @@ const CursoDetalle: React.FC = () => {
             <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
               {curso.nombre}
             </h1>
-            
+
             <IonItem lines="none">
               <IonLabel>
                 <h2 style={{ fontWeight: 'bold' }}>Descripción</h2>
@@ -350,9 +361,9 @@ const CursoDetalle: React.FC = () => {
                       {getFileIcon(material.split('.').pop() || '')}
                     </IonThumbnail>
                     <IonLabel>
-                      <a 
-                        href={`${API_URL}${material}`} 
-                        target="_blank" 
+                      <a
+                        href={`${API_URL}${material}`}
+                        target="_blank"
                         rel="noopener noreferrer"
                         style={{ textDecoration: 'none' }}
                       >
@@ -360,9 +371,9 @@ const CursoDetalle: React.FC = () => {
                       </a>
                     </IonLabel>
                     {esCreador && (
-                      <IonButton 
-                        slot="end" 
-                        size="small" 
+                      <IonButton
+                        slot="end"
+                        size="small"
                         color="danger"
                         onClick={() => eliminarMaterial(material)}
                       >
@@ -378,9 +389,9 @@ const CursoDetalle: React.FC = () => {
                       {getFileIcon(material.tipo)}
                     </IonThumbnail>
                     <IonLabel>
-                      <a 
-                        href={material.url} 
-                        target="_blank" 
+                      <a
+                        href={material.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         style={{ textDecoration: 'none' }}
                       >
@@ -389,9 +400,9 @@ const CursoDetalle: React.FC = () => {
                       </a>
                     </IonLabel>
                     {esCreador && (
-                      <IonButton 
-                        slot="end" 
-                        size="small" 
+                      <IonButton
+                        slot="end"
+                        size="small"
                         color="danger"
                         onClick={() => eliminarMaterial(material)}
                       >
@@ -416,17 +427,17 @@ const CursoDetalle: React.FC = () => {
                 </IonItemDivider>
 
                 <div style={{ marginTop: '1rem' }}>
-                  <input 
-                    type="file" 
-                    multiple 
+                  <input
+                    type="file"
+                    multiple
                     onChange={(e) => e.target.files && setArchivos(e.target.files)}
                     style={{ display: 'none' }}
                     id="file-upload"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ppt,.pptx"
                     ref={fileInputRef}
                   />
-                  <IonButton 
-                    expand="block" 
+                  <IonButton
+                    expand="block"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <IonIcon slot="start" icon={cloudUpload} />
@@ -436,9 +447,9 @@ const CursoDetalle: React.FC = () => {
                   {archivos && archivos.length > 0 && (
                     <div style={{ margin: '1rem 0' }}>
                       <p>Archivos seleccionados: {archivos.length}</p>
-                      <IonButton 
-                        expand="block" 
-                        color="success" 
+                      <IonButton
+                        expand="block"
+                        color="success"
                         onClick={subirMateriales}
                       >
                         Subir {archivos.length} archivo(s)
@@ -446,9 +457,9 @@ const CursoDetalle: React.FC = () => {
                     </div>
                   )}
 
-                  <IonButton 
-                    expand="block" 
-                    color="primary" 
+                  <IonButton
+                    expand="block"
+                    color="primary"
                     onClick={() => history.push(`/editar-curso/${curso.id}`)}
                     style={{ marginTop: '1rem' }}
                   >
@@ -456,9 +467,9 @@ const CursoDetalle: React.FC = () => {
                     Editar curso
                   </IonButton>
 
-                  <IonButton 
-                    expand="block" 
-                    color="danger" 
+                  <IonButton
+                    expand="block"
+                    color="danger"
                     onClick={eliminarCurso}
                     style={{ marginTop: '1rem' }}
                   >
@@ -469,9 +480,9 @@ const CursoDetalle: React.FC = () => {
               </>
             )}
 
-            <IonButton 
-              expand="block" 
-              color="medium" 
+            <IonButton
+              expand="block"
+              color="medium"
               onClick={() => history.goBack()}
               style={{ marginTop: '2rem' }}
             >
@@ -486,7 +497,7 @@ const CursoDetalle: React.FC = () => {
           isOpen={mostrarToast}
           onDidDismiss={() => setMostrarToast(false)}
           message={toastMsg}
-          duration={2000}
+          duration={3000} // Aumentado para mayor visibilidad
           color={toastMsg.includes('Error') ? 'danger' : 'success'}
         />
       </IonContent>
