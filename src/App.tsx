@@ -213,11 +213,11 @@ const App: React.FC = () => {
                 <Route path="/curso/:id" component={CursoDetalle} exact />
                 
                 {/* Private Routes */}
-                <PrivateRoute exact path="/Cursos_Usuarios" component={Cursos_Usuario} isLoggedIn={isLoggedIn} />
-                <PrivateRoute exact path="/Perfil" component={Perfil} isLoggedIn={isLoggedIn} />
-                <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} isLoggedIn={isLoggedIn} />
-                <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin} isLoggedIn={isLoggedIn} />
-                <PrivateRoute exact path="/GestionUsuarios" component={GestionUsuarios} isLoggedIn={isLoggedIn} />
+                <PrivateRoute exact path="/Cursos_Usuarios" component={Cursos_Usuario} />
+                <PrivateRoute exact path="/Perfil" component={Perfil}  />
+                <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario}  />
+                <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin}  />
+                <PrivateRoute exact path="/GestionUsuarios" component={GestionUsuarios}  />
                 
                 {/* Default Route */}
                 <Route exact path="/" render={() => (

@@ -1,20 +1,27 @@
 import React from 'react';
-import { Route, Redirect } from 'react-router-dom';
+import { Route, Redirect, RouteProps } from 'react-router-dom';
 
-interface PrivateRouteProps {
+interface PrivateRouteProps extends RouteProps {
   component: React.ComponentType<any>;
-  isLoggedIn: boolean;
-  [key: string]: any;
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ component: Component, isLoggedIn, ...rest }) => {
-  console.log("Accediendo a ruta privada, isLoggedIn:", isLoggedIn); // Depuración
-
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ component: Component, ...rest }) => {
+  const isAuthenticated = !!localStorage.getItem('token');
+  
   return (
     <Route
       {...rest}
       render={(props) =>
-        isLoggedIn ? <Component {...props} /> : <Redirect to="/login" />
+        isAuthenticated ? (
+          <Component {...props} />
+        ) : (
+          <Redirect
+            to={{
+              pathname: '/login',
+              state: { from: props.location }
+            }}
+          />
+        )
       }
     />
   );

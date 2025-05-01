@@ -12,13 +12,6 @@ import './Login.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-interface UserData {
-  ID: number;
-  NOMBRE_USUARIO: string;
-  EMAIL: string;
-  ROLE: string;
-}
-
 const Login: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({ nombre_usuario: '', email: '', password: '' });
@@ -65,7 +58,9 @@ const Login: React.FC = () => {
       localStorage.setItem('usuario', JSON.stringify(data.usuario));
       localStorage.setItem('userId', data.usuario.ID.toString());
 
-      history.push('/Inicio_Usuario');
+      // Redirección con recarga completa
+      window.location.assign('/Inicio_Usuario');
+      
     } catch (error: any) {
       console.error('Error en login:', error);
       setError(error.message || 'Error al iniciar sesión.');
@@ -117,8 +112,6 @@ const Login: React.FC = () => {
       setLoginData({ email: email.trim().toLowerCase(), password: '' });
       setRegisterData({ nombre_usuario: '', email: '', password: '' });
 
-      // Si quieres autologuearlo directamente, descomenta:
-      // await handleLogin();
     } catch (error: any) {
       console.error('Error en registro:', error);
 

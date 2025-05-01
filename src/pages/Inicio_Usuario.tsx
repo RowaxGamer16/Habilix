@@ -83,7 +83,11 @@ const Inicio_Usuario: React.FC = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     localStorage.removeItem('usuario');
-    history.push('/login');
+    
+    // Redirigir al login y forzar recarga completa
+    window.location.href = '/login';
+    // O alternativamente:
+    // window.location.replace('/login');
   };
 
   useEffect(() => {
