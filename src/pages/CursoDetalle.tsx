@@ -35,7 +35,7 @@ interface Usuario {
 
 interface MaterialLocal {
   nombre: string;
-  url: string;
+  contenido: string; // Almacena el archivo como base64
   fechaSubida: string;
   tamaño: number;
   tipo: string;
@@ -52,13 +52,23 @@ const CursoDetalle: React.FC = () => {
   const [toastMsg, setToastMsg] = useState('');
   const [mostrarToast, setMostrarToast] = useState(false);
   const [esCreador, setEsCreador] = useState(false);
-  const [isDeleted, setIsDeleted] = useState(false); // Estado para rastrear eliminación
+  const [isDeleted, setIsDeleted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const token = localStorage.getItem('token');
   const rawUsuario = localStorage.getItem('usuario');
   const usuario: Usuario | null = rawUsuario ? JSON.parse(rawUsuario) : null;
   const history = useHistory();
+
+  // Convertir archivo a base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
 
   const cargarMaterialesLocales = (cursoId: string): MaterialLocal[] => {
     const datos = localStorage.getItem(`${LOCAL_STORAGE_KEY}${cursoId}`);
@@ -71,7 +81,6 @@ const CursoDetalle: React.FC = () => {
 
   useEffect(() => {
     const fetchCurso = async () => {
-      // Evitar cargar datos si el curso ya fue eliminado
       if (isDeleted) return;
 
       try {
@@ -123,18 +132,26 @@ const CursoDetalle: React.FC = () => {
     const nuevosMaterialesLocales: MaterialLocal[] = [];
     const formData = new FormData();
 
-    Array.from(archivos).forEach(file => {
+    // Procesar cada archivo
+    for (const file of Array.from(archivos)) {
       formData.append('materiales', file);
 
-      const materialLocal: MaterialLocal = {
-        nombre: file.name,
-        url: URL.createObjectURL(file),
-        fechaSubida: new Date().toISOString(),
-        tamaño: file.size,
-        tipo: file.type
-      };
-      nuevosMaterialesLocales.push(materialLocal);
-    });
+      try {
+        const contenidoBase64 = await fileToBase64(file);
+        
+        const materialLocal: MaterialLocal = {
+          nombre: file.name,
+          contenido: contenidoBase64,
+          fechaSubida: new Date().toISOString(),
+          tamaño: file.size,
+          tipo: file.type
+        };
+        nuevosMaterialesLocales.push(materialLocal);
+      } catch (error) {
+        console.error('Error al convertir archivo:', error);
+        continue;
+      }
+    }
 
     try {
       const response = await fetch(`${API_URL}/cursos/${id}/materiales`, {
@@ -175,7 +192,7 @@ const CursoDetalle: React.FC = () => {
 
       if (esMaterialLocal) {
         const materialLocal = material as MaterialLocal;
-        const nuevosMateriales = materiales.filter(m => m.url !== materialLocal.url);
+        const nuevosMateriales = materiales.filter(m => m.nombre !== materialLocal.nombre);
         guardarMaterialesLocales(id, nuevosMateriales);
         setMateriales(nuevosMateriales);
         setToastMsg('Material local eliminado');
@@ -222,13 +239,12 @@ const CursoDetalle: React.FC = () => {
 
       if (result.success) {
         localStorage.removeItem(`${LOCAL_STORAGE_KEY}${id}`);
-        setIsDeleted(true); // Marcar el curso como eliminado
-        setCurso(null); // Limpiar el estado del curso
+        setIsDeleted(true);
+        setCurso(null);
         setToastMsg('Curso eliminado correctamente');
         setMostrarToast(true);
-        // Redirigir a la lista de cursos y recargar la página
         history.push('/cursos');
-        window.location.reload(); // Recargar la página para refrescar la lista de cursos
+        window.location.reload();
       } else {
         setToastMsg(result.error || 'Error al eliminar curso');
         setMostrarToast(true);
@@ -248,7 +264,6 @@ const CursoDetalle: React.FC = () => {
   };
 
   if (isDeleted) {
-    // Evitar renderizar cualquier cosa si el curso ya fue eliminado
     return null;
   }
 
@@ -390,9 +405,8 @@ const CursoDetalle: React.FC = () => {
                     </IonThumbnail>
                     <IonLabel>
                       <a
-                        href={material.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={material.contenido}
+                        download={material.nombre}
                         style={{ textDecoration: 'none' }}
                       >
                         {material.nombre}
@@ -497,7 +511,7 @@ const CursoDetalle: React.FC = () => {
           isOpen={mostrarToast}
           onDidDismiss={() => setMostrarToast(false)}
           message={toastMsg}
-          duration={3000} // Aumentado para mayor visibilidad
+          duration={3000}
           color={toastMsg.includes('Error') ? 'danger' : 'success'}
         />
       </IonContent>

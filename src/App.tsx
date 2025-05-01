@@ -1,32 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Redirect, Route } from 'react-router-dom';
-import './App.css';
-import { logoFacebook, logoX, chevronForward, logoGoogle, logoInstagram, call, mail, location } from 'ionicons/icons';
-import {
-  IonApp,
-  IonIcon,
-  IonLabel,
-  IonRouterOutlet,
-  IonMenu,
-  IonMenuButton,
-  IonToolbar,
-  IonButtons,
-  IonButton,
-  IonHeader,
-  IonContent,
-  IonFooter,
-  IonText,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonImg,
-  IonList,
-  IonItem,
-  IonTitle,
-  setupIonicReact,
+import { 
+  IonApp, IonIcon, IonLabel, IonRouterOutlet, IonMenu, IonMenuButton, 
+  IonToolbar, IonButtons, IonButton, IonHeader, IonContent, IonFooter, 
+  IonText, IonGrid, IonRow, IonCol, IonImg, IonList, IonItem, IonTitle 
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { home, school, people, helpCircle, logIn, personCircle } from 'ionicons/icons';
+import { 
+  home, school, people, helpCircle, logIn, personCircle, 
+  logoFacebook, logoX, chevronForward, logoGoogle, logoInstagram, 
+  call, mail, location 
+} from 'ionicons/icons';
+import { setupIonicReact } from '@ionic/react';
+
+// Pages
 import Inicio from './pages/Inicio';
 import Cursos from './pages/Cursos';
 import Contactos from './pages/Contactos';
@@ -36,10 +23,12 @@ import Perfil from './pages/Perfil';
 import InicioUsuario from './pages/Inicio_Usuario';
 import InicioAdmin from './pages/Admin/InicioAdmin';
 import GestionUsuarios from './pages/Admin/GestionUsuarios';
-import PrivateRoute from './pages/PrivateRoute'; // Asegúrate de importar el PrivateRoute
-import { UserProvider } from './context/UserContext'; // Importa el 
 import CursoDetalle from './pages/CursoDetalle';
+import Cursos_Usuario from './pages/Cursos_Usuario';
+import PrivateRoute from './pages/PrivateRoute';
+import { UserProvider } from './context/UserContext';
 
+// CSS
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
@@ -50,24 +39,55 @@ import '@ionic/react/css/text-alignment.css';
 import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
-import Cursos_Usuario from './pages/Cursos_Usuario';
+import './App.css';
 
 setupIonicReact();
+
+const menuItems = [
+  {
+    icon: home,
+    label: 'Inicio',
+    link: (isLoggedIn: boolean) => isLoggedIn ? "/Inicio_Usuario" : "/Inicio",
+    color: '#4a00e0'
+  },
+  {
+    icon: school,
+    label: 'Cursos',
+    link: () => "/Cursos",
+    color: '#6a3093'
+  },
+  {
+    icon: people,
+    label: 'Contactos',
+    link: () => "/Contactos",
+    color: '#8e2de2'
+  },
+  {
+    icon: helpCircle,
+    label: 'Ayuda',
+    link: () => "/Ayuda",
+    color: '#4776E6'
+  },
+  {
+    icon: (isLoggedIn: boolean) => isLoggedIn ? personCircle : logIn,
+    label: (isLoggedIn: boolean) => isLoggedIn ? 'Perfil' : 'Login',
+    link: (isLoggedIn: boolean) => isLoggedIn ? "/Perfil" : "/Login",
+    color: (isLoggedIn: boolean) => isLoggedIn ? '#00b09b' : '#1FA2FF'
+  }
+];
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token); // Convierte en booleano directo
-    console.log("Usuario logueado:", !!token); // Verifica en la consola
+    setIsLoggedIn(!!token);
   }, []);
-  
 
   return (
     <IonApp>
       <IonReactRouter>
-        {/* Menú lateral */}
+        {/* Side Menu */}
         <IonMenu side="start" menuId="mainMenu" contentId="mainContent">
           <IonHeader>
             <IonToolbar className="custom-toolbar" style={{
@@ -79,14 +99,13 @@ const App: React.FC = () => {
                 src="/Habilix.jpg"
                 alt="Logo"
                 style={{
-                  width: '70px',  // Reducido de 100px a 70px
-                  height: '70px', // Reducido de 100px a 70px
+                  width: '70px',
+                  height: '70px',
                   margin: '0 auto',
                   display: 'block',
-                  borderRadius: '500%',
-                  border: '2px solid rgba(255,255,255,0.2)', // Borde más fino
-                  boxShadow: '0 3px 10px rgba(0,0,0,0.2)', // Sombra más sutil
-                  transition: 'transform 0.3s ease'
+                  borderRadius: '50%',
+                  border: '2px solid rgba(255,255,255,0.2)',
+                  boxShadow: '0 3px 10px rgba(0,0,0,0.2)'
                 }}
               />
               <IonText style={{
@@ -108,43 +127,11 @@ const App: React.FC = () => {
             fontFamily: 'Josefin Sans, sans-serif'
           }}>
             <IonList lines="none" style={{ padding: '15px' }}>
-              {/* Ítems del menú con nuevo diseño */}
-              {[
-                {
-                  icon: home,
-                  label: isLoggedIn ? 'Inicio' : 'Inicio',
-                  link: isLoggedIn ? "/Inicio_Usuario" : "/Inicio",
-                  color: '#4a00e0'
-                },
-                {
-                  icon: school,
-                  label: 'Cursos',
-                  link: "/Cursos",
-                  color: '#6a3093'
-                },
-                {
-                  icon: people,
-                  label: 'Contactos',
-                  link: "/Contactos",
-                  color: '#8e2de2'
-                },
-                {
-                  icon: helpCircle,
-                  label: 'Ayuda',
-                  link: "/Ayuda",
-                  color: '#4776E6'
-                },
-                {
-                  icon: isLoggedIn ? personCircle : logIn,
-                  label: isLoggedIn ? 'Perfil' : 'Login',
-                  link: isLoggedIn ? "/Perfil" : "/Login",
-                  color: isLoggedIn ? '#00b09b' : '#1FA2FF'
-                }
-              ].map((item, index) => (
+              {menuItems.map((item, index) => (
                 <IonItem
                   key={index}
                   button
-                  routerLink={item.link}
+                  routerLink={item.link(isLoggedIn)}
                   className="menu-item"
                   style={{
                     margin: '12px 0',
@@ -154,16 +141,15 @@ const App: React.FC = () => {
                     transition: 'all 0.3s ease',
                     '--background-hover': '#f1f1f1',
                     '--background-activated': '#e9ecef',
-                    borderLeft: `5px solid ${item.color}`
+                    borderLeft: `5px solid ${typeof item.color === 'function' ? item.color(isLoggedIn) : item.color}`
                   }}
                 >
                   <IonIcon
-                    icon={item.icon}
+                    icon={typeof item.icon === 'function' ? item.icon(isLoggedIn) : item.icon}
                     slot="start"
                     style={{
-                      color: item.color,
-                      fontSize: '1.4rem',
-                      transition: 'all 0.3s ease'
+                      color: typeof item.color === 'function' ? item.color(isLoggedIn) : item.color,
+                      fontSize: '1.4rem'
                     }}
                   />
                   <IonLabel style={{
@@ -172,21 +158,17 @@ const App: React.FC = () => {
                     fontFamily: 'Josefin Sans, sans-serif',
                     letterSpacing: '0.5px'
                   }}>
-                    {item.label}
+                    {typeof item.label === 'function' ? item.label(isLoggedIn) : item.label}
                   </IonLabel>
                   <IonIcon
                     icon={chevronForward}
                     slot="end"
-                    style={{
-                      color: '#adb5bd',
-                      fontSize: '1rem'
-                    }}
+                    style={{ color: '#adb5bd', fontSize: '1rem' }}
                   />
                 </IonItem>
               ))}
             </IonList>
 
-            {/* Pie del menú */}
             <div style={{
               padding: '20px',
               textAlign: 'center',
@@ -204,31 +186,40 @@ const App: React.FC = () => {
           </IonContent>
         </IonMenu>
 
-        {/* Contenedor principal */}
+        {/* Main Content */}
         <div className="app-container">
           <IonHeader>
             <IonToolbar color="secondary">
               <IonButtons slot="end">
                 <IonMenuButton autoHide={false} />
               </IonButtons>
-              <IonTitle style={{ textAlign: 'left', flex: 1, fontFamily: 'Josefin Sans, sans-serif' }}>Habilix</IonTitle>
+              <IonTitle style={{ textAlign: 'left', flex: 1, fontFamily: 'Josefin Sans, sans-serif' }}>
+                Habilix
+              </IonTitle>
             </IonToolbar>
           </IonHeader>
 
           <UserProvider>
             <IonContent id="mainContent" className="ion-padding">
               <IonRouterOutlet>
-                <Route exact path="/Inicio" render={() => (isLoggedIn ? <Redirect to="/Inicio_Usuario" /> : <Inicio />)} />
+                {/* Public Routes */}
+                <Route exact path="/Inicio" render={() => (
+                  isLoggedIn ? <Redirect to="/Inicio_Usuario" /> : <Inicio />
+                )} />
                 <Route exact path="/Cursos" component={Cursos} />
                 <Route exact path="/Contactos" component={Contactos} />
                 <Route exact path="/Ayuda" component={Ayuda} />
                 <Route exact path="/Login" component={Login} />
                 <Route path="/curso/:id" component={CursoDetalle} exact />
-                <Route exact path="/GestionUsuarios" component={GestionUsuarios} />
+                
+                {/* Private Routes */}
                 <PrivateRoute exact path="/Cursos_Usuarios" component={Cursos_Usuario} isLoggedIn={isLoggedIn} />
                 <PrivateRoute exact path="/Perfil" component={Perfil} isLoggedIn={isLoggedIn} />
                 <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} isLoggedIn={isLoggedIn} />
                 <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin} isLoggedIn={isLoggedIn} />
+                <PrivateRoute exact path="/GestionUsuarios" component={GestionUsuarios} isLoggedIn={isLoggedIn} />
+                
+                {/* Default Route */}
                 <Route exact path="/" render={() => (
                   isLoggedIn ? <Redirect to="/Inicio_Usuario" /> : <Redirect to="/Inicio" />
                 )} />
@@ -239,21 +230,18 @@ const App: React.FC = () => {
           <IonFooter className="footer" style={{ padding: '5px 0' }}>
             <IonGrid>
               <IonRow className="footer-content">
-                {/* Contacto */}
                 <IonCol size="4" className="footer-contact" style={{ fontSize: '12px' }}>
-                  <p><IonIcon icon={location} style={{ margin: '0 5px' }} /> Santo Domingo, Repùblica Dominicana</p>
+                  <p><IonIcon icon={location} style={{ margin: '0 5px' }} /> Santo Domingo, República Dominicana</p>
                   <p><IonIcon icon={call} style={{ margin: '0 5px' }} /> (+1) 809 514 9661</p>
                   <p><IonIcon icon={mail} style={{ margin: '0 5px' }} /> habilixcorporation@gmail.com</p>
                 </IonCol>
 
-                {/* Redes sociales */}
                 <IonCol size="4" className="footer-icons" style={{ fontSize: '14px' }}>
                   <IonIcon icon={logoFacebook} style={{ margin: '0 5px' }} />
                   <IonIcon icon={logoX} style={{ margin: '0 5px' }} />
                   <IonIcon icon={logoInstagram} style={{ margin: '0 5px' }} />
                 </IonCol>
 
-                {/* Derechos reservados */}
                 <IonCol size="4" className="footer-text" style={{ fontSize: '12px' }}>
                   <IonText>Habilix &copy; 2025</IonText>
                 </IonCol>

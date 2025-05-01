@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Función para iniciar sesión
   const login = () => {
     setIsLoggedIn(true);
-    localStorage.setItem('authToken', 'your-auth-token');
+    localStorage.setItem('authToken', 'token');
   };
 
   // Función para cerrar sesión
