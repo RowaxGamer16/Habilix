@@ -16,11 +16,12 @@ import {
   IonLoading,
   IonToast,
   IonAlert,
+  IonImg,
 } from '@ionic/react';
 import { arrowBack, save } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 interface Curso {
   id: number;
@@ -74,16 +75,23 @@ const EditarCurso: React.FC = () => {
   useEffect(() => {
     const fetchCurso = async () => {
       try {
+        if (!token || !id) {
+          throw new Error('Token de autenticación o ID de curso no encontrado');
+        }
+
         const response = await fetch(`${API_URL}/cursos/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        if (!response.ok) throw new Error('Error al obtener el curso');
+        
+        if (!response.ok) {
+          throw new Error('Error al obtener el curso');
+        }
 
         const data = await response.json();
         setCurso(data);
-        // Usar los valores reales del curso desde la API
+        
         setFormData({
           nombre: data.nombre,
           descripcion: data.descripcion,
@@ -94,7 +102,6 @@ const EditarCurso: React.FC = () => {
           profesor: data.profesor,
         });
 
-        // Verificar si el usuario es el creador
         if (usuario) {
           const esCreadorVerificado = Number(usuario.ID) === Number(data.id_usuario);
           setEsCreador(esCreadorVerificado);
@@ -104,7 +111,7 @@ const EditarCurso: React.FC = () => {
         }
       } catch (err) {
         console.error('Error al cargar el curso:', err);
-        setError('Error al cargar el curso');
+        setError(err instanceof Error ? err.message : 'Error al cargar el curso');
       } finally {
         setLoading(false);
       }
@@ -113,41 +120,76 @@ const EditarCurso: React.FC = () => {
     fetchCurso();
   }, [id, token, usuario]);
 
-  // Manejar cambios en los campos del formulario
-  const handleInputChange = (field: keyof typeof formData, value: string | number) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  const handleInputChange = (field: keyof typeof formData) => 
+    (event: CustomEvent | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      let value: string | number;
+      
+      if ('detail' in event) {
+        // Es un evento de Ionic (CustomEvent)
+        value = event.detail.value || '';
+      } else {
+        // Es un evento de React (ChangeEvent)
+        value = event.target.value || '';
+      }
 
-  // Manejar cambio de imagen
+      // Manejo especial para el campo de precio
+      if (field === 'precio') {
+        value = Number(value) || 0;
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
     }
   };
 
-  // Guardar cambios
+  const validarFormulario = () => {
+    if (!formData.nombre.trim()) {
+      setError('El nombre del curso es requerido');
+      return false;
+    }
+    if (!formData.descripcion.trim()) {
+      setError('La descripción del curso es requerida');
+      return false;
+    }
+    if (!formData.profesor.trim()) {
+      setError('El nombre del profesor es requerido');
+      return false;
+    }
+    if (formData.precio < 0) {
+      setError('El precio no puede ser negativo');
+      return false;
+    }
+    return true;
+  };
+
   const guardarCambios = async () => {
     if (!esCreador) {
       setError('No tienes permiso para editar este curso');
       return;
     }
 
-    if (!formData.nombre || !formData.descripcion || !formData.profesor) {
-      setError('Nombre, descripción y profesor son campos requeridos');
+    if (!validarFormulario()) {
       return;
     }
 
     setSaving(true);
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('nombre', formData.nombre);
-      formDataToSend.append('descripcion', formData.descripcion);
-      formDataToSend.append('categoria', formData.categoria);
-      formDataToSend.append('precio', String(formData.precio));
+      formDataToSend.append('nombre', formData.nombre.trim());
+      formDataToSend.append('descripcion', formData.descripcion.trim());
+      formDataToSend.append('categoria', formData.categoria.trim());
+      formDataToSend.append('precio', formData.precio.toString());
       formDataToSend.append('entrega', formData.entrega);
       formDataToSend.append('horario', formData.horario);
-      formDataToSend.append('profesor', formData.profesor);
+      formDataToSend.append('profesor', formData.profesor.trim());
+      
       if (selectedImage) {
         formDataToSend.append('portada', selectedImage);
       }
@@ -160,18 +202,29 @@ const EditarCurso: React.FC = () => {
         body: formDataToSend,
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al actualizar el curso');
+      }
+
       const result = await response.json();
 
       if (result.success) {
         setToastMsg('Curso actualizado correctamente');
         setMostrarToast(true);
-        history.push(`/curso/${id}`);
+        setTimeout(() => {
+          history.push(`/curso/${id}`);
+        }, 1500);
       } else {
         throw new Error(result.error || 'Error al actualizar el curso');
       }
     } catch (err) {
       console.error('Error al guardar cambios:', err);
-      setError('Error al guardar los cambios');
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : 'Error al guardar los cambios'
+      );
     } finally {
       setSaving(false);
     }
@@ -196,7 +249,7 @@ const EditarCurso: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
-          <p>No tienes permiso para editar este curso o el curso no existe.</p>
+          <p>{error || 'No tienes permiso para editar este curso o el curso no existe.'}</p>
           <IonButton expand="block" onClick={() => history.push('/cursos')}>
             <IonIcon slot="start" icon={arrowBack} />
             Volver a Cursos
@@ -215,27 +268,30 @@ const EditarCurso: React.FC = () => {
       </IonHeader>
       <IonContent className="ion-padding">
         <IonItem>
-          <IonLabel position="floating">Nombre del curso</IonLabel>
+          <IonLabel position="floating">Nombre del curso*</IonLabel>
           <IonInput
             value={formData.nombre}
-            onIonChange={(e) => handleInputChange('nombre', e.detail.value || '')}
+            onIonChange={handleInputChange('nombre')}
+            required
           />
         </IonItem>
 
         <IonItem>
-          <IonLabel position="floating">Descripción</IonLabel>
+          <IonLabel position="floating">Descripción*</IonLabel>
           <IonTextarea
             value={formData.descripcion}
-            onIonChange={(e) => handleInputChange('descripcion', e.detail.value || '')}
+            onIonChange={handleInputChange('descripcion')}
             rows={4}
+            required
           />
         </IonItem>
 
         <IonItem>
-          <IonLabel position="floating">Profesor</IonLabel>
+          <IonLabel position="floating">Profesor*</IonLabel>
           <IonInput
             value={formData.profesor}
-            onIonChange={(e) => handleInputChange('profesor', e.detail.value || '')}
+            onIonChange={handleInputChange('profesor')}
+            required
           />
         </IonItem>
 
@@ -243,16 +299,17 @@ const EditarCurso: React.FC = () => {
           <IonLabel position="floating">Categoría</IonLabel>
           <IonInput
             value={formData.categoria}
-            onIonChange={(e) => handleInputChange('categoria', e.detail.value || '')}
+            onIonChange={handleInputChange('categoria')}
           />
         </IonItem>
 
         <IonItem>
-          <IonLabel position="floating">Precio</IonLabel>
+          <IonLabel position="floating">Precio ($)</IonLabel>
           <IonInput
             type="number"
             value={formData.precio}
-            onIonChange={(e) => handleInputChange('precio', Number(e.detail.value) || 0)}
+            onIonChange={handleInputChange('precio')}
+            min="0"
           />
         </IonItem>
 
@@ -260,7 +317,7 @@ const EditarCurso: React.FC = () => {
           <IonLabel>Método de entrega</IonLabel>
           <IonSelect
             value={formData.entrega}
-            onIonChange={(e) => handleInputChange('entrega', e.detail.value)}
+            onIonChange={(e) => handleInputChange('entrega')(e)}
           >
             <IonSelectOption value="Virtual">Virtual</IonSelectOption>
             <IonSelectOption value="Presencial">Presencial</IonSelectOption>
@@ -272,7 +329,7 @@ const EditarCurso: React.FC = () => {
           <IonLabel>Horario</IonLabel>
           <IonSelect
             value={formData.horario}
-            onIonChange={(e) => handleInputChange('horario', e.detail.value)}
+            onIonChange={(e) => handleInputChange('horario')(e)}
           >
             <IonSelectOption value="Flexible">Flexible</IonSelectOption>
             <IonSelectOption value="Fijo">Fijo</IonSelectOption>
@@ -294,39 +351,54 @@ const EditarCurso: React.FC = () => {
             expand="block"
             onClick={() => fileInputRef.current?.click()}
             color="primary"
+            fill="outline"
           >
             Seleccionar Imagen
           </IonButton>
-          {selectedImage && <p>{selectedImage.name}</p>}
+          {selectedImage && (
+            <p style={{ marginLeft: '16px', marginTop: '8px' }}>
+              {selectedImage.name}
+            </p>
+          )}
           {curso.portada && !selectedImage && (
-            <img
-              src={`${API_URL}${curso.portada}`}
-              alt="Portada actual"
-              style={{ maxWidth: '100%', maxHeight: '150px', marginTop: '10px' }}
-            />
+            <div style={{ marginTop: '10px', textAlign: 'center' }}>
+              <IonImg 
+                src={`${API_URL}${curso.portada}`}
+                alt="Portada actual"
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '200px', 
+                  objectFit: 'contain',
+                  margin: '0 auto'
+                }}
+              />
+              <p>Imagen actual</p>
+            </div>
           )}
         </IonItem>
 
-        <IonButton
-          expand="block"
-          color="success"
-          onClick={guardarCambios}
-          disabled={saving}
-          style={{ marginTop: '1rem' }}
-        >
-          <IonIcon slot="start" icon={save} />
-          Guardar Cambios
-        </IonButton>
+        <div style={{ marginTop: '20px' }}>
+          <IonButton
+            expand="block"
+            color="primary"
+            onClick={guardarCambios}
+            disabled={saving}
+          >
+            <IonIcon slot="start" icon={save} />
+            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          </IonButton>
 
-        <IonButton
-          expand="block"
-          color="medium"
-          onClick={() => history.push(`/curso/${id}`)}
-          style={{ marginTop: '1rem' }}
-        >
-          <IonIcon slot="start" icon={arrowBack} />
-          Cancelar
-        </IonButton>
+          <IonButton
+            expand="block"
+            color="medium"
+            onClick={() => history.push(`/curso/${id}`)}
+            fill="outline"
+            style={{ marginTop: '10px' }}
+          >
+            <IonIcon slot="start" icon={arrowBack} />
+            Cancelar
+          </IonButton>
+        </div>
 
         <IonLoading isOpen={saving} message="Guardando cambios..." />
         <IonToast
@@ -334,7 +406,8 @@ const EditarCurso: React.FC = () => {
           onDidDismiss={() => setMostrarToast(false)}
           message={toastMsg}
           duration={3000}
-          color={toastMsg.includes('Error') ? 'danger' : 'success'}
+          color="success"
+          position="top"
         />
         <IonAlert
           isOpen={!!error}
