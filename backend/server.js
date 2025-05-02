@@ -25,14 +25,24 @@ app.use(express.json());
 // Configuración de Multer para subida de archivos
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, 'Uploads/');
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
-const upload = multer({ storage: storage });
+const upload = multer({ 
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Solo se permiten imágenes (jpeg, png, gif)'));
+        }
+    }
+});
 
 // Conexión a la base de datos
 const db = await mysql.createPool({
@@ -67,7 +77,7 @@ const validateToken = async (req, res, next) => {
         details: process.env.NODE_ENV === 'development' ? err.message : undefined
       });
     }
-  };
+};
 
 // Rutas de autenticación
 app.post('/api/login', [
@@ -109,7 +119,6 @@ app.post('/api/login', [
     }
 });
 
-
 app.post('/api/register', [
     body('nombre_usuario').isLength({ min: 3 }).withMessage('El nombre debe tener al menos 3 caracteres'),
     body('email').isEmail().normalizeEmail().withMessage('Ingrese un email válido'),
@@ -127,19 +136,16 @@ app.post('/api/register', [
     console.log('📩 Intento de registro:', email);
 
     try {
-        // Verificar si el email ya existe
         const [existingUsers] = await db.query('SELECT * FROM usuarios WHERE EMAIL = ?', [email]);
         if (existingUsers.length > 0) {
             return res.status(400).json({ error: 'El correo ya está registrado' });
         }
 
-        // Insertar nuevo usuario (sin hashear la contraseña)
         const [result] = await db.query(
             'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE, FECHA_CREACION) VALUES (?, ?, ?, "1", NOW())',
-            [nombre_usuario, email, password] // Contraseña en texto plano
+            [nombre_usuario, email, password]
         );
 
-        // Crear token
         const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET || 'token', { expiresIn: '1h' });
 
         console.log('✅ Usuario registrado:', result.insertId);
@@ -161,8 +167,6 @@ app.post('/api/register', [
     }
 });
 
-
-// Ruta para obtener información del usuario autenticado
 app.get('/api/usuario', validateToken, async (req, res) => {
     try {
         res.json({
@@ -215,7 +219,6 @@ app.put('/api/usuario/actualizar', validateToken, [
 
         await db.query('UPDATE usuarios SET ? WHERE ID = ?', [updates, req.user.ID]);
 
-        // Obtener y devolver los datos actualizados
         const [user] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [req.user.ID]);
         
         res.json({ 
@@ -240,20 +243,19 @@ app.put('/api/usuario/actualizar', validateToken, [
     }
 });
 
-// Rutas de cursos
 app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {
-    const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
-    const portada = req.file ? `/uploads/${req.file.filename}` : '';
+    const { nombre, descripcion, categoria, precio, entrega, horario, profesor } = req.body;
+    const portada = req.file ? `/Uploads/${req.file.filename}` : '';
     const id_usuario = req.user.ID;
 
-    console.log('📚 Creando curso:', { nombre, id_usuario });
+    console.log('📚 Creando curso:', { nombre, id_usuario, profesor });
 
     try {
         const query = `
-            INSERT INTO cursos (nombre, descripcion, portada, categoria, precio, entrega, horario, ranking, opiniones, id_usuario, imagenes_materiales)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, '[]')
+            INSERT INTO cursos (nombre, descripcion, portada, categoria, precio, entrega, horario, profesor, ranking, opiniones, id_usuario, imagenes_materiales)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, '[]')
         `;
-        const [result] = await db.query(query, [nombre, descripcion, portada, categoria, precio, entrega, horario, id_usuario]);
+        const [result] = await db.query(query, [nombre, descripcion, portada, categoria, precio, entrega, horario, profesor, id_usuario]);
 
         res.json({ success: true, id: result.insertId });
         console.log('✅ Curso creado:', result.insertId);
@@ -263,7 +265,6 @@ app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res
     }
 });
 
-// Obtener todos los cursos
 app.get('/api/cursos', async (req, res) => {
     try {
         const [results] = await db.query(`
@@ -279,7 +280,6 @@ app.get('/api/cursos', async (req, res) => {
     }
 });
 
-// Obtener un curso por ID
 app.get('/api/cursos/:id', async (req, res) => {
     const id = req.params.id;
     try {
@@ -302,33 +302,44 @@ app.get('/api/cursos/:id', async (req, res) => {
     }
 });
 
-// Editar curso
 app.put('/api/cursos/:id', validateToken, upload.single('portada'), async (req, res) => {
     const idCurso = req.params.id;
-    const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
-    const portada = req.file ? `/uploads/${req.file.filename}` : null;
+    const { nombre, descripcion, categoria, precio, entrega, horario, profesor } = req.body;
+    const portada = req.file ? `/Uploads/${req.file.filename}` : null;
 
     try {
         const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
         if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para editar este curso' });
 
-        const campos = ['nombre = ?', 'descripcion = ?', 'categoria = ?', 'precio = ?', 'entrega = ?', 'horario = ?'];
-        const valores = [nombre, descripcion, categoria, precio, entrega, horario];
-
-        if (portada) {
-            campos.push('portada = ?');
-            valores.push(portada);
-            
-            // Eliminar la imagen anterior si existe
-            if (cursos[0].portada) {
-                const oldImagePath = path.join(__dirname, cursos[0].portada);
-                unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
-            }
+        // Validar campos requeridos
+        if (!nombre || !descripcion || !profesor) {
+            return res.status(400).json({ error: 'Nombre, descripción y profesor son campos requeridos' });
         }
 
-        valores.push(idCurso);
+        const updates = {};
+        if (nombre) updates.nombre = nombre;
+        if (descripcion) updates.descripcion = descripcion;
+        if (categoria) updates.categoria = categoria;
+        if (precio) updates.precio = precio;
+        if (entrega) updates.entrega = entrega;
+        if (horario) updates.horario = horario;
+        if (profesor) updates.profesor = profesor;
+        if (portada) updates.portada = portada;
 
-        await db.query(`UPDATE cursos SET ${campos.join(', ')} WHERE id = ?`, valores);
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ error: 'No se proporcionaron campos para actualizar' });
+        }
+
+        if (portada && cursos[0].portada) {
+            const oldImagePath = path.join(__dirname, cursos[0].portada);
+            unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
+        }
+
+        const fields = Object.keys(updates).map((key) => `${key} = ?`);
+        const values = Object.values(updates);
+        values.push(idCurso);
+
+        await db.query(`UPDATE cursos SET ${fields.join(', ')} WHERE id = ?`, values);
         console.log('📝 Curso actualizado:', idCurso);
         res.json({ success: true });
     } catch (err) {
@@ -337,7 +348,6 @@ app.put('/api/cursos/:id', validateToken, upload.single('portada'), async (req, 
     }
 });
 
-// Eliminar curso
 app.delete('/api/cursos/:id', validateToken, async (req, res) => {
     const idCurso = req.params.id;
 
@@ -345,13 +355,11 @@ app.delete('/api/cursos/:id', validateToken, async (req, res) => {
         const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
         if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para eliminar este curso' });
 
-        // Eliminar la imagen de portada si existe
         if (cursos[0].portada) {
             const imagePath = path.join(__dirname, cursos[0].portada);
             unlinkAsync(imagePath).catch(err => console.error('Error al borrar imagen:', err));
         }
 
-        // Eliminar materiales asociados
         const materiales = JSON.parse(cursos[0].imagenes_materiales || '[]');
         for (const material of materiales) {
             const filePath = path.join(__dirname, material);
@@ -367,7 +375,6 @@ app.delete('/api/cursos/:id', validateToken, async (req, res) => {
     }
 });
 
-// Rutas para comentarios y valoraciones
 app.post('/api/cursos/:id/comentario', validateToken, async (req, res) => {
     const id = req.params.id;
     const { comentario } = req.body;
@@ -389,14 +396,12 @@ app.post('/api/cursos/:id/comentario', validateToken, async (req, res) => {
     }
 });
 
-// Actualizar ranking
 app.put('/api/cursos/:id/ranking', validateToken, async (req, res) => {
     const id = req.params.id;
     const { ranking } = req.body;
     const usuarioId = req.user.ID;
 
     try {
-        // Primero obtenemos el curso actual
         const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ?', [id]);
         if (cursos.length === 0) return res.status(404).json({ error: 'Curso no encontrado' });
 
@@ -412,7 +417,6 @@ app.put('/api/cursos/:id/ranking', validateToken, async (req, res) => {
     }
 });
 
-// Rutas para materiales del curso
 app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales', 10), async (req, res) => {
     const idCurso = req.params.id;
 
@@ -421,19 +425,13 @@ app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales',
         if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para modificar este curso' });
 
         const archivos = req.files.map(file => {
-            // Conservar solo el nombre original del archivo
             const nombreOriginal = file.originalname;
             const extension = path.extname(nombreOriginal);
             const nombreBase = path.basename(nombreOriginal, extension);
-            
-            // Generar nuevo nombre único sin prefijos automáticos
             const nuevoNombre = `${nombreBase}-${Date.now()}${extension}`;
-            const nuevoPath = path.join(__dirname, 'uploads', nuevoNombre);
-            
-            // Renombrar el archivo físico
+            const nuevoPath = path.join(__dirname, 'Uploads', nuevoNombre);
             fs.renameSync(file.path, nuevoPath);
-            
-            return `/uploads/${nuevoNombre}`;
+            return `/Uploads/${nuevoNombre}`;
         });
 
         const materialesActuales = JSON.parse(cursos[0].imagenes_materiales || '[]');
@@ -445,14 +443,14 @@ app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales',
         res.json({ 
             success: true, 
             nuevosMateriales: archivos,
-            nombresOriginales: req.files.map(file => file.originalname) // Envía los nombres originales
+            nombresOriginales: req.files.map(file => file.originalname)
         });
     } catch (err) {
         console.error('❌ Error al agregar materiales:', err);
         
         if (req.files) {
             for (const file of req.files) {
-                const filePath = path.join(__dirname, 'uploads', file.filename);
+                const filePath = path.join(__dirname, 'Uploads', file.filename);
                 unlinkAsync(filePath).catch(err => console.error('Error al borrar archivo:', err));
             }
         }
@@ -461,7 +459,6 @@ app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales',
     }
 });
 
-// Eliminar materiales del curso
 app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
     const idCurso = req.params.id;
     const { archivo } = req.body;
@@ -473,7 +470,6 @@ app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
         const materialesActuales = JSON.parse(cursos[0].imagenes_materiales || '[]');
         const nuevosMateriales = materialesActuales.filter(material => {
             if (material === archivo) {
-                // Borrar el archivo físico
                 const filePath = path.join(__dirname, archivo);
                 unlinkAsync(filePath).catch(err => console.error('Error al borrar archivo:', err));
                 return false;
@@ -491,10 +487,8 @@ app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
     }
 });
 
-// Servir archivos estáticos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/Uploads', express.static(path.join(__dirname, 'Uploads')));
 
-// Manejo de errores global
 app.use((err, req, res, next) => {
     console.error('🔥 Error global:', err);
     res.status(500).json({ 
@@ -503,7 +497,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Iniciar servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
