@@ -29,7 +29,7 @@ import Cursos_Usuario from './pages/Cursos_Usuario';
 import PrivateRoute from './pages/PrivateRoute';
 import { UserProvider } from './context/UserContext';
 import EditarPerfil from './pages/EditarPerfil';
-
+import GestionCursos from './pages/GestionCursos';
 // CSS
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -227,6 +227,9 @@ const App: React.FC = () => {
                 <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} />
                 <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin} />
                 <PrivateRoute exact path="/GestionUsuarios" component={GestionUsuarios} />
+                <PrivateRoute exact path="/GestionCursos" component={GestionCursos} />
+
+                
                 
                 {/* Default Route */}
                 <Route exact path="/" render={() => (
