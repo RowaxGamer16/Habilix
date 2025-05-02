@@ -184,6 +184,62 @@ app.get('/api/usuario', validateToken, async (req, res) => {
     }
 });
 
+app.put('/api/usuario/actualizar', validateToken, [
+    body('NOMBRE_USUARIO').optional().isLength({ min: 3 }).withMessage('El nombre debe tener al menos 3 caracteres'),
+    body('TELEFONO').optional().isLength({ min: 8 }).withMessage('Teléfono inválido')
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ 
+                success: false,
+                errors: errors.array().map(err => ({
+                    field: err.param,
+                    message: err.msg
+                }))
+            });
+        }
+
+        const { NOMBRE_USUARIO, TELEFONO } = req.body;
+        const updates = {};
+        
+        if (NOMBRE_USUARIO !== undefined) updates.NOMBRE_USUARIO = NOMBRE_USUARIO;
+        if (TELEFONO !== undefined) updates.TELEFONO = TELEFONO;
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'No hay datos para actualizar' 
+            });
+        }
+
+        await db.query('UPDATE usuarios SET ? WHERE ID = ?', [updates, req.user.ID]);
+
+        // Obtener y devolver los datos actualizados
+        const [user] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [req.user.ID]);
+        
+        res.json({ 
+            success: true,
+            usuario: {
+                ID: user[0].ID,
+                NOMBRE_USUARIO: user[0].NOMBRE_USUARIO,
+                EMAIL: user[0].EMAIL,
+                ROLE: user[0].ROLE,
+                TELEFONO: user[0].TELEFONO || '',
+                FECHA_CREACION: user[0].FECHA_CREACION
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar usuario:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al actualizar el perfil',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
 // Rutas de cursos
 app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {
     const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;

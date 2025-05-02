@@ -107,7 +107,14 @@ const Perfil: React.FC = () => {
   };
 
   const handleEditProfile = () => {
-    history.push('/editar-perfil');
+    history.push('/EditarPerfil', { 
+      userData: {
+        ID: userData.ID,
+        NOMBRE_USUARIO: userData.NOMBRE_USUARIO,
+        EMAIL: userData.EMAIL,
+        TELEFONO: userData.TELEFONO
+      }
+    });
   };
 
   const formatDate = (dateString: string) => {
