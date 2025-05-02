@@ -35,7 +35,7 @@ interface Usuario {
 
 interface MaterialLocal {
   nombre: string;
-  contenido: string; // Almacena el archivo como base64
+  contenido: string;
   fechaSubida: string;
   tamaño: number;
   tipo: string;
@@ -45,7 +45,6 @@ const CursoDetalle: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [curso, setCurso] = useState<Curso | null>(null);
   const [materiales, setMateriales] = useState<MaterialLocal[]>([]);
-  const [materialesServidor, setMaterialesServidor] = useState<string[]>([]);
   const [archivos, setArchivos] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(true);
   const [subiendo, setSubiendo] = useState(false);
@@ -60,7 +59,18 @@ const CursoDetalle: React.FC = () => {
   const usuario: Usuario | null = rawUsuario ? JSON.parse(rawUsuario) : null;
   const history = useHistory();
 
-  // Convertir archivo a base64
+  // Función para limpiar nombres de archivo
+  const limpiarNombreArchivo = (nombre: string) => {
+    return nombre.replace(/^materials-\d+-\d+-/, '').replace(/^\d+-/, '');
+  };
+
+  // Función auxiliar para crear FileList
+  const crearFileList = (files: File[]): FileList => {
+    const dataTransfer = new DataTransfer();
+    files.forEach(file => dataTransfer.items.add(file));
+    return dataTransfer.files;
+  };
+
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -94,17 +104,9 @@ const CursoDetalle: React.FC = () => {
         const data = await response.json();
         setCurso(data);
 
-        // Cargar materiales del servidor
-        const materialesServidor = typeof data.imagenes_materiales === 'string'
-          ? JSON.parse(data.imagenes_materiales || '[]')
-          : data.imagenes_materiales || [];
-        setMaterialesServidor(materialesServidor);
-
-        // Cargar materiales locales
         const materialesLocales = cargarMaterialesLocales(id);
         setMateriales(materialesLocales);
 
-        // Verificar si el usuario actual es el creador
         if (usuario) {
           const esCreadorVerificado = Number(usuario.ID) === Number(data.id_usuario);
           setEsCreador(esCreadorVerificado);
@@ -123,7 +125,7 @@ const CursoDetalle: React.FC = () => {
 
   const subirMateriales = async () => {
     if (!archivos || archivos.length === 0) {
-      setToastMsg('No hay archivos seleccionados');
+      setToastMsg('No hay archivos seleccionados válidos');
       setMostrarToast(true);
       return;
     }
@@ -132,8 +134,30 @@ const CursoDetalle: React.FC = () => {
     const nuevosMaterialesLocales: MaterialLocal[] = [];
     const formData = new FormData();
 
-    // Procesar cada archivo
-    for (const file of Array.from(archivos)) {
+    const tiposPermitidos = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/png',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ];
+
+    const archivosArray = Array.from(archivos).filter(file => 
+      file.size > 0 && 
+      file.name && 
+      tiposPermitidos.includes(file.type)
+    );
+
+    if (archivosArray.length === 0) {
+      setToastMsg('No hay archivos válidos para subir');
+      setMostrarToast(true);
+      setSubiendo(false);
+      return;
+    }
+
+    for (const file of archivosArray) {
       formData.append('materiales', file);
 
       try {
@@ -163,8 +187,6 @@ const CursoDetalle: React.FC = () => {
       const result = await response.json();
 
       if (result.success) {
-        setMaterialesServidor(result.nuevosMateriales || []);
-
         const materialesActuales = cargarMaterialesLocales(id);
         const materialesActualizados = [...materialesActuales, ...nuevosMaterialesLocales];
         guardarMaterialesLocales(id, materialesActualizados);
@@ -184,42 +206,18 @@ const CursoDetalle: React.FC = () => {
     }
   };
 
-  const eliminarMaterial = async (material: MaterialLocal | string) => {
+  const eliminarMaterial = async (material: MaterialLocal) => {
     if (!window.confirm('¿Eliminar este material?')) return;
 
     try {
-      const esMaterialLocal = typeof material !== 'string';
-
-      if (esMaterialLocal) {
-        const materialLocal = material as MaterialLocal;
-        const nuevosMateriales = materiales.filter(m => m.nombre !== materialLocal.nombre);
-        guardarMaterialesLocales(id, nuevosMateriales);
-        setMateriales(nuevosMateriales);
-        setToastMsg('Material local eliminado');
-      } else {
-        const nombreArchivo = material as string;
-        const response = await fetch(`${API_URL}/cursos/${id}/materiales`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ archivo: nombreArchivo })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          setMaterialesServidor(prev => prev.filter(m => m !== nombreArchivo));
-          setToastMsg('Material del servidor eliminado');
-        } else {
-          throw new Error(result.error || 'Error al eliminar');
-        }
-      }
+      const nuevosMateriales = materiales.filter(m => m.nombre !== material.nombre);
+      guardarMaterialesLocales(id, nuevosMateriales);
+      setMateriales(nuevosMateriales);
+      setToastMsg('Material eliminado');
+      setMostrarToast(true);
     } catch (err) {
       console.error('Error al eliminar material:', err);
       setToastMsg('Error al eliminar material');
-    } finally {
       setMostrarToast(true);
     }
   };
@@ -368,63 +366,39 @@ const CursoDetalle: React.FC = () => {
               <IonLabel>Materiales del curso</IonLabel>
             </IonItemDivider>
 
-            {(materialesServidor.length > 0 || materiales.length > 0) ? (
+            {materiales.length > 0 ? (
               <IonList>
-                {materialesServidor.map((material, index) => (
-                  <IonItem key={`server-${index}`}>
-                    <IonThumbnail slot="start">
-                      {getFileIcon(material.split('.').pop() || '')}
-                    </IonThumbnail>
-                    <IonLabel>
-                      <a
-                        href={`${API_URL}${material}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ textDecoration: 'none' }}
-                      >
-                        {material.split('/').pop()}
-                      </a>
-                    </IonLabel>
-                    {esCreador && (
-                      <IonButton
-                        slot="end"
-                        size="small"
-                        color="danger"
-                        onClick={() => eliminarMaterial(material)}
-                      >
-                        <IonIcon icon={trash} />
-                      </IonButton>
-                    )}
-                  </IonItem>
-                ))}
-
-                {materiales.map((material, index) => (
-                  <IonItem key={`local-${index}`}>
-                    <IonThumbnail slot="start">
-                      {getFileIcon(material.tipo)}
-                    </IonThumbnail>
-                    <IonLabel>
-                      <a
-                        href={material.contenido}
-                        download={material.nombre}
-                        style={{ textDecoration: 'none' }}
-                      >
-                        {material.nombre}
-                        <p>Tamaño: {(material.tamaño / 1024).toFixed(2)} KB</p>
-                      </a>
-                    </IonLabel>
-                    {esCreador && (
-                      <IonButton
-                        slot="end"
-                        size="small"
-                        color="danger"
-                        onClick={() => eliminarMaterial(material)}
-                      >
-                        <IonIcon icon={trash} />
-                      </IonButton>
-                    )}
-                  </IonItem>
-                ))}
+                {materiales.map((material, index) => {
+                  const nombreLimpio = limpiarNombreArchivo(material.nombre);
+                  
+                  return (
+                    <IonItem key={`local-${index}`}>
+                      <IonThumbnail slot="start">
+                        {getFileIcon(material.tipo)}
+                      </IonThumbnail>
+                      <IonLabel>
+                        <a
+                          href={material.contenido}
+                          download={material.nombre}
+                          style={{ textDecoration: 'none' }}
+                        >
+                          {nombreLimpio}
+                          <p>Tamaño: {(material.tamaño / 1024).toFixed(2)} KB</p>
+                        </a>
+                      </IonLabel>
+                      {esCreador && (
+                        <IonButton
+                          slot="end"
+                          size="small"
+                          color="danger"
+                          onClick={() => eliminarMaterial(material)}
+                        >
+                          <IonIcon icon={trash} />
+                        </IonButton>
+                      )}
+                    </IonItem>
+                  );
+                })}
               </IonList>
             ) : (
               <IonItem>
@@ -444,7 +418,27 @@ const CursoDetalle: React.FC = () => {
                   <input
                     type="file"
                     multiple
-                    onChange={(e) => e.target.files && setArchivos(e.target.files)}
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        const tiposPermitidos = [
+                          'application/pdf',
+                          'application/msword',
+                          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                          'image/jpeg',
+                          'image/png',
+                          'application/vnd.ms-powerpoint',
+                          'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+                        ];
+                        
+                        const archivosValidos = Array.from(e.target.files).filter(file => 
+                          file.size > 0 && 
+                          file.name && 
+                          tiposPermitidos.includes(file.type)
+                        );
+                        
+                        setArchivos(crearFileList(archivosValidos));
+                      }
+                    }}
                     style={{ display: 'none' }}
                     id="file-upload"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.ppt,.pptx"

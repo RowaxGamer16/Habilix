@@ -420,18 +420,36 @@ app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales',
         const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
         if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para modificar este curso' });
 
-        const archivos = req.files.map(file => `/uploads/${file.filename}`);
+        const archivos = req.files.map(file => {
+            // Conservar solo el nombre original del archivo
+            const nombreOriginal = file.originalname;
+            const extension = path.extname(nombreOriginal);
+            const nombreBase = path.basename(nombreOriginal, extension);
+            
+            // Generar nuevo nombre único sin prefijos automáticos
+            const nuevoNombre = `${nombreBase}-${Date.now()}${extension}`;
+            const nuevoPath = path.join(__dirname, 'uploads', nuevoNombre);
+            
+            // Renombrar el archivo físico
+            fs.renameSync(file.path, nuevoPath);
+            
+            return `/uploads/${nuevoNombre}`;
+        });
+
         const materialesActuales = JSON.parse(cursos[0].imagenes_materiales || '[]');
         const nuevosMateriales = [...materialesActuales, ...archivos];
 
         await db.query('UPDATE cursos SET imagenes_materiales = ? WHERE id = ?', [JSON.stringify(nuevosMateriales), idCurso]);
 
         console.log('📎 Materiales agregados al curso:', idCurso);
-        res.json({ success: true, nuevosMateriales });
+        res.json({ 
+            success: true, 
+            nuevosMateriales: archivos,
+            nombresOriginales: req.files.map(file => file.originalname) // Envía los nombres originales
+        });
     } catch (err) {
         console.error('❌ Error al agregar materiales:', err);
         
-        // Si hay error, eliminamos los archivos subidos
         if (req.files) {
             for (const file of req.files) {
                 const filePath = path.join(__dirname, 'uploads', file.filename);
