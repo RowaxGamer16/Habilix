@@ -18,7 +18,8 @@ import {
   IonIcon,
   IonAlert,
   IonLabel,
-  IonItem
+  IonItem,
+  IonButtons
 } from '@ionic/react';
 import { star } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
@@ -43,6 +44,7 @@ const Cursos: React.FC = () => {
 
   const [searchText, setSearchText] = useState('');
   const [showModalCrearCurso, setShowModalCrearCurso] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +137,12 @@ const Cursos: React.FC = () => {
   );
 
   const handleVerCurso = (cursoId: number) => {
-    history.push(`/curso/${cursoId}`);
+    const isUserLoggedIn = !!localStorage.getItem('token');
+    if (isUserLoggedIn) {
+      history.push(`/curso/${cursoId}`);
+    } else {
+      setShowLoginModal(true);
+    }
   };
 
   const isUserLoggedIn = !!localStorage.getItem('token');
@@ -206,8 +213,12 @@ const Cursos: React.FC = () => {
                     </div>
                   </div>
 
-                  <IonButton expand="block" onClick={() => handleVerCurso(curso.id)} color="primary">
-                    Ver Detalles
+                  <IonButton 
+                    expand="block" 
+                    onClick={() => handleVerCurso(curso.id)} 
+                    color={isUserLoggedIn ? "primary" : "medium"}
+                  >
+                    {isUserLoggedIn ? "Ver Detalles" : "Inicia sesión para ver"}
                   </IonButton>
                 </IonCardContent>
               </IonCard>
@@ -274,6 +285,49 @@ const Cursos: React.FC = () => {
                 </IonCol>
               </IonRow>
             </IonGrid>
+          </IonContent>
+        </IonModal>
+
+        <IonModal isOpen={showLoginModal} onDidDismiss={() => setShowLoginModal(false)}>
+          <IonContent className="ion-padding">
+            <IonHeader>
+              <IonToolbar>
+                <IonButtons slot="start">
+                  <IonButton onClick={() => setShowLoginModal(false)}>Cerrar</IonButton>
+                </IonButtons>
+                <IonTitle>Acceso Requerido</IonTitle>
+              </IonToolbar>
+            </IonHeader>
+            
+            <div className="ion-text-center ion-padding">
+              <h2>Debes iniciar sesión para ver los detalles del curso</h2>
+              <p>Por favor inicia sesión o regístrate para acceder a todos los contenidos.</p>
+              
+              <IonButton 
+                expand="block" 
+                onClick={() => {
+                  setShowLoginModal(false);
+                  history.push('/login');
+                }}
+                color="primary"
+                className="ion-margin-top"
+              >
+                Iniciar Sesión
+              </IonButton>
+              
+              <IonButton 
+                expand="block" 
+                onClick={() => {
+                  setShowLoginModal(false);
+                  history.push('/register');
+                }}
+                color="secondary"
+                fill="outline"
+                className="ion-margin-top"
+              >
+                Registrarse
+              </IonButton>
+            </div>
           </IonContent>
         </IonModal>
 

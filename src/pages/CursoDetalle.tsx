@@ -2,11 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonButton, IonIcon, IonCard, IonCardContent, IonLabel, IonItem,
-  IonItemDivider, IonLoading, IonToast, IonList, IonThumbnail,
-  IonModal
+  IonItemDivider, IonLoading, IonToast, IonList, IonThumbnail
 } from '@ionic/react';
-import { star, cloudUpload, trash, create, arrowBack, document } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
+import { star, cloudUpload, trash, create, arrowBack, document } from 'ionicons/icons';
 
 const API_URL = 'http://localhost:5000/api';
 const LOCAL_STORAGE_KEY = 'curso_materiales_';
@@ -23,16 +22,15 @@ interface Curso {
   horario: string;
   imagenes_materiales: string;
   id_usuario: number;
-  profesor: string;
 }
 
 interface Usuario {
-  ID: number;
-  NOMBRE_USUARIO: string;
-  EMAIL: string;
-  ROLE: string;
-  TELEFONO?: string;
-  FECHA_CREACION?: string;
+  id: number;
+  nombre_usuario: string;
+  email: string;
+  role: string;
+  telefono?: string;
+  fecha_creacion?: string;
 }
 
 interface MaterialLocal {
@@ -41,7 +39,6 @@ interface MaterialLocal {
   fechaSubida: string;
   tamaño: number;
   tipo: string;
-  url?: string;
 }
 
 const CursoDetalle: React.FC = () => {
@@ -55,8 +52,6 @@ const CursoDetalle: React.FC = () => {
   const [mostrarToast, setMostrarToast] = useState(false);
   const [esCreador, setEsCreador] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
-  const [materialAVisualizar, setMaterialAVisualizar] = useState<MaterialLocal | null>(null);
-  const [mostrarVisor, setMostrarVisor] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const token = localStorage.getItem('token');
@@ -64,12 +59,10 @@ const CursoDetalle: React.FC = () => {
   const usuario: Usuario | null = rawUsuario ? JSON.parse(rawUsuario) : null;
   const history = useHistory();
 
-  // Función para limpiar nombres de archivo
   const limpiarNombreArchivo = (nombre: string) => {
     return nombre.replace(/^materials-\d+-\d+-/, '').replace(/^\d+-/, '');
   };
 
-  // Función auxiliar para crear FileList
   const crearFileList = (files: File[]): FileList => {
     const dataTransfer = new DataTransfer();
     files.forEach(file => dataTransfer.items.add(file));
@@ -85,16 +78,6 @@ const CursoDetalle: React.FC = () => {
     });
   };
 
-  const base64ToBlob = (base64: string, contentType: string) => {
-    const byteCharacters = atob(base64.split(',')[1]);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: contentType });
-  };
-
   const cargarMaterialesLocales = (cursoId: string): MaterialLocal[] => {
     const datos = localStorage.getItem(`${LOCAL_STORAGE_KEY}${cursoId}`);
     return datos ? JSON.parse(datos) : [];
@@ -104,57 +87,37 @@ const CursoDetalle: React.FC = () => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}${cursoId}`, JSON.stringify(materiales));
   };
 
-  const visualizarMaterial = (material: MaterialLocal) => {
-    const blob = base64ToBlob(material.contenido, material.tipo);
-    const url = URL.createObjectURL(blob);
-    setMaterialAVisualizar({ ...material, url });
-    setMostrarVisor(true);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (materialAVisualizar?.url) {
-        URL.revokeObjectURL(materialAVisualizar.url);
-      }
-    };
-  }, [materialAVisualizar]);
-
   useEffect(() => {
     const fetchCurso = async () => {
       if (isDeleted) return;
 
-  const fetchCurso = async () => {
-    if (isDeleted) return;
+      try {
+        const response = await fetch(`${API_URL}/cursos/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) throw new Error('Error al obtener el curso');
 
+        const data = await response.json();
+        setCurso(data);
 
-    try {
-      const response = await fetch(`${API_URL}/cursos/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+        const materialesLocales = cargarMaterialesLocales(id);
+        setMateriales(materialesLocales);
+
+        if (usuario) {
+          const esCreadorVerificado = usuario.id === data.id_usuario;
+          setEsCreador(esCreadorVerificado);
         }
-      });
-      if (!response.ok) throw new Error('Error al obtener el curso');
-
-      const data = await response.json();
-      setCurso(data);
-
-      const materialesLocales = cargarMaterialesLocales(id);
-      setMateriales(materialesLocales);
-
-      if (usuario) {
-        const esCreadorVerificado = Number(usuario.ID) === Number(data.id_usuario);
-        setEsCreador(esCreadorVerificado);
+      } catch (err) {
+        console.error('Error al cargar el curso:', err);
+        setToastMsg('Error al cargar el curso');
+        setMostrarToast(true);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error al cargar el curso:', err);
-      setToastMsg('Error al cargar el curso');
-      setMostrarToast(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
     fetchCurso();
   }, [id, usuario, token, isDeleted]);
 
@@ -363,13 +326,6 @@ const CursoDetalle: React.FC = () => {
 
             <IonItem>
               <IonLabel>
-                <h2 style={{ fontWeight: 'bold' }}>Profesor</h2>
-                <p>{curso.profesor}</p>
-              </IonLabel>
-            </IonItem>
-
-            <IonItem>
-              <IonLabel>
                 <h2 style={{ fontWeight: 'bold' }}>Categoría</h2>
                 <p>{curso.categoria}</p>
               </IonLabel>
@@ -419,19 +375,15 @@ const CursoDetalle: React.FC = () => {
                         {getFileIcon(material.tipo)}
                       </IonThumbnail>
                       <IonLabel>
-                        <div onClick={() => visualizarMaterial(material)} style={{ cursor: 'pointer' }}>
+                        <a
+                          href={material.contenido}
+                          download={material.nombre}
+                          style={{ textDecoration: 'none' }}
+                        >
                           {nombreLimpio}
                           <p>Tamaño: {(material.tamaño / 1024).toFixed(2)} KB</p>
-                        </div>
+                        </a>
                       </IonLabel>
-                      <IonButton
-                        slot="end"
-                        size="small"
-                        color="primary"
-                        onClick={() => visualizarMaterial(material)}
-                      >
-                        <IonIcon icon={eye} />
-                      </IonButton>
                       {esCreador && (
                         <IonButton
                           slot="end"
@@ -545,60 +497,6 @@ const CursoDetalle: React.FC = () => {
             </IonButton>
           </IonCardContent>
         </IonCard>
-
-        {/* Visor de Materiales */}
-        <IonModal isOpen={mostrarVisor} onDidDismiss={() => setMostrarVisor(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{materialAVisualizar?.nombre}</IonTitle>
-              <IonButton slot="end" onClick={() => setMostrarVisor(false)}>
-                Cerrar
-              </IonButton>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent className="ion-padding">
-            {materialAVisualizar && (
-              <div style={{ height: '100%', width: '100%' }}>
-                {materialAVisualizar.tipo.includes('pdf') && (
-                  <embed 
-                    src={materialAVisualizar.url} 
-                    type="application/pdf" 
-                    width="100%" 
-                    height="100%"
-                  />
-                )}
-                {materialAVisualizar.tipo.includes('image') && (
-                  <img 
-                    src={materialAVisualizar.url} 
-                    alt={materialAVisualizar.nombre}
-                    style={{ maxWidth: '100%', maxHeight: '100%' }}
-                  />
-                )}
-                {(materialAVisualizar.tipo.includes('word') || 
-                  materialAVisualizar.tipo.includes('powerpoint')) && (
-                  <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <p>Este tipo de archivo no se puede previsualizar directamente</p>
-                    <IonButton 
-                      href={materialAVisualizar.contenido}
-                      download={materialAVisualizar.nombre}
-                    >
-                      Descargar para ver
-                    </IonButton>
-                  </div>
-                )}
-                <div style={{ marginTop: '20px' }}>
-                  <IonButton 
-                    expand="block" 
-                    href={materialAVisualizar.contenido}
-                    download={materialAVisualizar.nombre}
-                  >
-                    Descargar
-                  </IonButton>
-                </div>
-              </div>
-            )}
-          </IonContent>
-        </IonModal>
 
         <IonLoading isOpen={subiendo} message="Subiendo materiales..." />
         <IonToast
