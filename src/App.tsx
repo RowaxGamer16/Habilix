@@ -24,6 +24,7 @@ import InicioUsuario from './pages/Inicio_Usuario';
 import InicioAdmin from './pages/InicioAdmin';
 import GestionUsuarios from './pages/GestionUsuarios';
 import CursoDetalle from './pages/CursoDetalle';
+import EditarCurso from './pages/EditarCurso';
 import Cursos_Usuario from './pages/Cursos_Usuario';
 import PrivateRoute from './pages/PrivateRoute';
 import { UserProvider } from './context/UserContext';
@@ -218,6 +219,7 @@ const App: React.FC = () => {
                 <Route exact path="/Login" component={Login} />
                 <Route path="/curso/:id" component={CursoDetalle} exact />
                 <Route exact path="/EditarPerfil" component={EditarPerfil} />
+                <Route path="/editar-curso/:id" component={EditarCurso} exact />
 
                 {/* Private Routes */}
                 <PrivateRoute exact path="/Cursos_Usuario" component={Cursos_Usuario} />

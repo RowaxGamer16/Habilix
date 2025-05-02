@@ -5,8 +5,8 @@ import {
   IonItemDivider, IonLoading, IonToast, IonList, IonThumbnail,
   IonModal
 } from '@ionic/react';
+import { star, cloudUpload, trash, create, arrowBack, document } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
-import { star, cloudUpload, trash, create, arrowBack, document, eye } from 'ionicons/icons';
 
 const API_URL = 'http://localhost:5000/api';
 const LOCAL_STORAGE_KEY = 'curso_materiales_';
@@ -23,6 +23,7 @@ interface Curso {
   horario: string;
   imagenes_materiales: string;
   id_usuario: number;
+  profesor: string;
 }
 
 interface Usuario {
@@ -122,33 +123,38 @@ const CursoDetalle: React.FC = () => {
     const fetchCurso = async () => {
       if (isDeleted) return;
 
-      try {
-        const response = await fetch(`${API_URL}/cursos/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (!response.ok) throw new Error('Error al obtener el curso');
+  const fetchCurso = async () => {
+    if (isDeleted) return;
 
-        const data = await response.json();
-        setCurso(data);
 
-        const materialesLocales = cargarMaterialesLocales(id);
-        setMateriales(materialesLocales);
-
-        if (usuario) {
-          const esCreadorVerificado = Number(usuario.ID) === Number(data.id_usuario);
-          setEsCreador(esCreadorVerificado);
+    try {
+      const response = await fetch(`${API_URL}/cursos/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      } catch (err) {
-        console.error('Error al cargar el curso:', err);
-        setToastMsg('Error al cargar el curso');
-        setMostrarToast(true);
-      } finally {
-        setLoading(false);
-      }
-    };
+      });
+      if (!response.ok) throw new Error('Error al obtener el curso');
 
+      const data = await response.json();
+      setCurso(data);
+
+      const materialesLocales = cargarMaterialesLocales(id);
+      setMateriales(materialesLocales);
+
+      if (usuario) {
+        const esCreadorVerificado = Number(usuario.ID) === Number(data.id_usuario);
+        setEsCreador(esCreadorVerificado);
+      }
+    } catch (err) {
+      console.error('Error al cargar el curso:', err);
+      setToastMsg('Error al cargar el curso');
+      setMostrarToast(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCurso();
   }, [id, usuario, token, isDeleted]);
 
@@ -352,6 +358,13 @@ const CursoDetalle: React.FC = () => {
               <IonLabel>
                 <h2 style={{ fontWeight: 'bold' }}>Descripción</h2>
                 <p style={{ whiteSpace: 'pre-line' }}>{curso.descripcion}</p>
+              </IonLabel>
+            </IonItem>
+
+            <IonItem>
+              <IonLabel>
+                <h2 style={{ fontWeight: 'bold' }}>Profesor</h2>
+                <p>{curso.profesor}</p>
               </IonLabel>
             </IonItem>
 
