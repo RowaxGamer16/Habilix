@@ -2,49 +2,53 @@ import React, { useState, useEffect } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardHeader,
   IonCardContent, IonText, IonButton, IonAvatar, IonToast, IonLoading,
-  IonIcon, IonItem, IonLabel
+  IonIcon, IonItem, IonLabel, IonBadge
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import {
-  logOutOutline, personCircleOutline, mailOutline, callOutline, settingsOutline
+  logOutOutline, personCircleOutline, mailOutline, callOutline, settingsOutline,
+  schoolOutline, calendarOutline, starOutline
 } from 'ionicons/icons';
 import './Perfil.css';
 
-interface UserData {
-  id: number;
-  nombre_usuario: string;
-  email: string;
-  role: number;
-  telefono?: string;
-  fecha_creacion?: string;
+interface UserProfile {
+  ID: number;
+  NOMBRE_USUARIO: string;
+  EMAIL: string;
+  ROLE: string;
+  TELEFONO?: string;
+  FECHA_CREACION: string;
+  CURSOS_CREADOS?: number;
+  CURSOS_TOMADOS?: number;
+  RATING?: number;
 }
 
 const Perfil: React.FC = () => {
-  const [userData, setUserData] = useState<UserData>({
-    id: 0, nombre_usuario: '', email: '', role: 1
+  const [userData, setUserData] = useState<UserProfile>({
+    ID: 0,
+    NOMBRE_USUARIO: '',
+    EMAIL: '',
+    ROLE: '1',
+    TELEFONO: '',
+    FECHA_CREACION: new Date().toISOString()
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [showLogoutToast, setShowLogoutToast] = useState(false);
   const history = useHistory();
 
-  const BASE_URL = 'http://localhost:5000';
-
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      history.push('/login');
-      return;
-    }
+    const fetchUserProfile = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        history.push('/login');
+        return;
+      }
 
-    const fetchUserData = async () => {
       setIsLoading(true);
       try {
-        const decoded = jwtDecode<{ ID: number }>(token);
-
-        const response = await fetch(`${BASE_URL}/api/usuario/perfil`, {
-
+        const response = await fetch('http://localhost:5000/api/usuario', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -54,32 +58,33 @@ const Perfil: React.FC = () => {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Error al obtener datos del usuario');
+          throw new Error(errorData.error || 'Error al obtener perfil');
         }
 
         const data = await response.json();
+        
+        if (!data.usuario) {
+          throw new Error('Datos de usuario no encontrados');
+        }
 
         setUserData({
-          id: data.id,
-          nombre_usuario: data.nombre_usuario,
-          email: data.email,
-          role: data.role,
-          telefono: data.telefono || '',
-          fecha_creacion: data.fecha_creacion || new Date().toISOString()
+          ID: data.usuario.ID,
+          NOMBRE_USUARIO: data.usuario.NOMBRE_USUARIO,
+          EMAIL: data.usuario.EMAIL,
+          ROLE: data.usuario.ROLE,
+          TELEFONO: data.usuario.TELEFONO || '',
+          FECHA_CREACION: data.usuario.FECHA_CREACION,
+          CURSOS_CREADOS: data.usuario.CURSOS_CREADOS || 0,
+          CURSOS_TOMADOS: data.usuario.CURSOS_TOMADOS || 0,
+          RATING: data.usuario.RATING || 0
         });
 
-        localStorage.setItem('userBasicData', JSON.stringify({
-          id: data.id,
-          nombre_usuario: data.nombre_usuario,
-          email: data.email
-        }));
-
       } catch (err) {
-        console.error('Error al obtener perfil:', err);
-        const msg = err instanceof Error ? err.message : 'Error desconocido';
-        const isAuthError = msg.includes('Token') || msg.includes('autorizado');
-        setError(msg);
-        if (isAuthError) {
+        console.error('Error fetching profile:', err);
+        const message = err instanceof Error ? err.message : 'Error desconocido';
+        setError(message);
+        
+        if (message.includes('token') || message.includes('autenticación')) {
           localStorage.removeItem('token');
           history.push('/login');
         }
@@ -88,28 +93,35 @@ const Perfil: React.FC = () => {
       }
     };
 
-    fetchUserData();
+    fetchUserProfile();
   }, [history]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('userBasicData');
     setShowLogoutToast(true);
-    setTimeout(() => history.push('/login'), 1500);
+    setTimeout(() => {
+      // Redirige al login y recarga la página
+      window.location.href = '/login';
+      window.location.reload();
+    }, 1500);
   };
 
   const handleEditProfile = () => {
     history.push('/editar-perfil');
   };
 
-  const formatDate = (fecha?: string) => {
-    if (!fecha) return 'No disponible';
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    });
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+    return new Date(dateString).toLocaleDateString('es-ES', options);
   };
 
-  const getRoleName = (role: number) => role === 1 ? 'Usuario estándar' : 'Administrador';
+  const getRoleName = (role: string) => {
+    return role === '1' ? 'Estudiante' : 'Instructor';
+  };
 
   return (
     <IonPage>
@@ -119,60 +131,86 @@ const Perfil: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding profile-content">
-        <IonLoading isOpen={isLoading} message="Cargando tus datos..." spinner="crescent" />
+      <IonContent className="ion-padding">
+        <IonLoading isOpen={isLoading} message="Cargando perfil..." />
 
-        <div className="profile-header">
+        <div className="profile-header ion-text-center ion-padding">
           <IonAvatar className="profile-avatar">
-            <img src="" alt="Avatar" onError={(e) => (e.target as HTMLImageElement).src = ''} />
+            <img 
+              src={`https://ui-avatars.com/api/?name=${userData.NOMBRE_USUARIO}&background=random`} 
+              alt="Avatar" 
+            />
           </IonAvatar>
-          <h1 className="profile-name">{userData.nombre_usuario || 'Usuario'}</h1>
-          <p className="profile-role">{getRoleName(userData.role)}</p>
+          <h1>{userData.NOMBRE_USUARIO}</h1>
+          <IonBadge color="primary">{getRoleName(userData.ROLE)}</IonBadge>
         </div>
 
-        <IonCard className="profile-info-card">
+        <IonCard className="profile-card">
           <IonCardHeader>
-            <IonText color="primary"><h2>Información Personal</h2></IonText>
+            <IonText color="primary"><h2>Información Básica</h2></IonText>
           </IonCardHeader>
           <IonCardContent>
             <IonItem lines="none">
-              <IonIcon icon={personCircleOutline} slot="start" color="primary" />
+              <IonIcon icon={mailOutline} slot="start" color="medium" />
               <IonLabel>
-                <h3>Nombre de usuario</h3>
-                <p>{userData.nombre_usuario || 'No disponible'}</p>
+                <p>Correo electrónico</p>
+                <h3>{userData.EMAIL}</h3>
               </IonLabel>
             </IonItem>
+
             <IonItem lines="none">
-              <IonIcon icon={mailOutline} slot="start" color="primary" />
+              <IonIcon icon={callOutline} slot="start" color="medium" />
               <IonLabel>
-                <h3>Correo electrónico</h3>
-                <p>{userData.email || 'No disponible'}</p>
+                <p>Teléfono</p>
+                <h3>{userData.TELEFONO || 'No especificado'}</h3>
               </IonLabel>
             </IonItem>
-            {userData.telefono && (
-              <IonItem lines="none">
-                <IonIcon icon={callOutline} slot="start" color="primary" />
-                <IonLabel>
-                  <h3>Teléfono</h3>
-                  <p>{userData.telefono}</p>
-                </IonLabel>
-              </IonItem>
-            )}
+
             <IonItem lines="none">
-              <IonIcon icon={settingsOutline} slot="start" color="primary" />
+              <IonIcon icon={calendarOutline} slot="start" color="medium" />
               <IonLabel>
-                <h3>Miembro desde</h3>
-                <p>{formatDate(userData.fecha_creacion)}</p>
+                <p>Miembro desde</p>
+                <h3>{formatDate(userData.FECHA_CREACION)}</h3>
               </IonLabel>
             </IonItem>
           </IonCardContent>
         </IonCard>
 
-        <div className="profile-actions">
-          <IonButton expand="block" fill="solid" color="primary" onClick={handleEditProfile}>
+        <IonCard className="stats-card">
+          <IonCardHeader>
+            <IonText color="primary"><h2>Estadísticas</h2></IonText>
+          </IonCardHeader>
+          <IonCardContent>
+            <div className="stats-grid">
+              <div className="stat-item">
+                <IonIcon icon={schoolOutline} color="primary" size="large" />
+                <h3>{userData.CURSOS_CREADOS}</h3>
+                <p>Cursos creados</p>
+              </div>
+              <div className="stat-item">
+                <IonIcon icon={personCircleOutline} color="success" size="large" />
+                <h3>{userData.CURSOS_TOMADOS}</h3>
+                <p>Cursos tomados</p>
+              </div>
+              <div className="stat-item">
+                <IonIcon icon={starOutline} color="warning" size="large" />
+                <h3>{userData.RATING?.toFixed(1) || '0.0'}</h3>
+                <p>Rating promedio</p>
+              </div>
+            </div>
+          </IonCardContent>
+        </IonCard>
+
+        <div className="ion-padding profile-actions">
+          <IonButton expand="block" onClick={handleEditProfile}>
             Editar Perfil
           </IonButton>
-          <IonButton expand="block" fill="outline" color="danger" onClick={handleLogout}>
+          <IonButton 
+            expand="block" 
+            fill="outline" 
+            color="danger" 
+            onClick={handleLogout}
+          >
             <IonIcon icon={logOutOutline} slot="start" />
             Cerrar Sesión
           </IonButton>
@@ -183,7 +221,6 @@ const Perfil: React.FC = () => {
           message={error}
           duration={4000}
           color="danger"
-          position="top"
           onDidDismiss={() => setError('')}
           buttons={[{ text: 'OK', role: 'cancel' }]}
         />
