@@ -22,6 +22,7 @@ import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import InicioUsuario from './pages/Inicio_Usuario';
 import InicioAdmin from './pages/InicioAdmin';
+import GestionCursos from './pages/GestionCursos';
 import GestionUsuarios from './pages/GestionUsuarios';
 import CursoDetalle from './pages/CursoDetalle';
 import EditarCurso from './pages/EditarCurso';
@@ -227,6 +228,7 @@ const App: React.FC = () => {
                 <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} />
                 <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin} />
                 <PrivateRoute exact path="/GestionUsuarios" component={GestionUsuarios} />
+                <PrivateRoute exact path="/GestionCursos" component={GestionCursos} />
                 
                 {/* Default Route */}
                 <Route exact path="/" render={() => (

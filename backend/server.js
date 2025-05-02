@@ -89,6 +89,16 @@ const validateToken = async (req, res, next) => {
     }
 };
 
+const isAdmin = (req, res, next) => {
+    if (req.user && req.user.ROLE === 2) {
+        next();
+    } else {
+        console.error('⚠️ Intento de acceso no autorizado a ruta de admin por usuario:', req.user?.ID);
+        res.status(403).json({ error: 'Acceso denegado. Se requieren privilegios de administrador' });
+    }
+};
+
+
 // Rutas de autenticación
 app.post('/api/login', [
     body('email').isEmail().normalizeEmail(),
@@ -347,7 +357,211 @@ app.delete('/api/admin/usuarios/:id', validateToken, async (req, res) => {
     }
 });
 
+// Rutas de administrador - Usuarios
+app.get('/api/admin/usuarios', validateToken, isAdmin, async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT 
+                ID,
+                NOMBRE_USUARIO,
+                EMAIL,
+                COALESCE(TELEFONO, '') AS TELEFONO,
+                DATE_FORMAT(FECHA_CREACION, '%Y-%m-%d %H:%i:%s') AS FECHA_CREACION,
+                ROLE
+            FROM usuarios
+            ORDER BY FECHA_CREACION DESC
+        `);
 
+        res.json({
+            success: true,
+            data: rows,
+            count: rows.length
+        });
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error del servidor',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+app.delete('/api/admin/usuarios/:id', validateToken, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        if (parseInt(id) === req.user.ID) {
+            return res.status(400).json({
+                success: false,
+                error: 'No puedes eliminarte a ti mismo'
+            });
+        }
+
+        const [result] = await db.query('DELETE FROM usuarios WHERE ID = ?', [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Usuario no encontrado'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Usuario eliminado correctamente'
+        });
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error del servidor',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Rutas de administrador - Cursos
+app.get('/api/admin/cursos', validateToken, isAdmin, async (req, res) => {
+    try {
+        const [results] = await db.query(`
+            SELECT c.*, u.NOMBRE_USUARIO as profesor 
+            FROM cursos c
+            JOIN usuarios u ON c.id_usuario = u.ID
+        `);
+        res.json({
+            success: true,
+            data: results
+        });
+    } catch (err) {
+        console.error('Error al obtener cursos:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al obtener los cursos' 
+        });
+    }
+});
+
+app.get('/api/admin/cursos/:id', validateToken, isAdmin, async (req, res) => {
+    const id = req.params.id;
+    try {
+        const [results] = await db.query(`
+            SELECT c.*, u.NOMBRE_USUARIO as profesor 
+            FROM cursos c
+            JOIN usuarios u ON c.id_usuario = u.ID
+            WHERE c.id = ?
+        `, [id]);
+        
+        if (results.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Curso no encontrado' 
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: results[0]
+        });
+    } catch (err) {
+        console.error('Error al obtener el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al obtener el curso' 
+        });
+    }
+});
+
+app.put('/api/admin/cursos/:id', validateToken, isAdmin, upload.single('portada'), async (req, res) => {
+    const idCurso = req.params.id;
+    const { nombre, descripcion, categoria, precio, entrega, horario, id_usuario } = req.body;
+    const portada = req.file ? `/Uploads/${req.file.filename}` : null;
+
+    try {
+        const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ?', [idCurso]);
+        if (cursos.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Curso no encontrado' 
+            });
+        }
+
+        if (!nombre || !descripcion || !id_usuario) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Nombre, descripción y ID de usuario son campos requeridos' 
+            });
+        }
+
+        const updates = {
+            nombre,
+            descripcion,
+            categoria: categoria || null,
+            precio: precio || null,
+            entrega: entrega || null,
+            horario: horario || null,
+            id_usuario
+        };
+        
+        if (portada) updates.portada = portada;
+
+        if (portada && cursos[0].portada) {
+            const oldImagePath = path.join(__dirname, cursos[0].portada);
+            unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
+        }
+
+        await db.query('UPDATE cursos SET ? WHERE id = ?', [updates, idCurso]);
+        
+        res.json({ 
+            success: true,
+            message: 'Curso actualizado correctamente'
+        });
+    } catch (err) {
+        console.error('Error al actualizar el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al actualizar el curso' 
+        });
+    }
+});
+
+app.delete('/api/admin/cursos/:id', validateToken, isAdmin, async (req, res) => {
+    const idCurso = req.params.id;
+
+    try {
+        const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ?', [idCurso]);
+        if (cursos.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Curso no encontrado' 
+            });
+        }
+
+        if (cursos[0].portada) {
+            const imagePath = path.join(__dirname, cursos[0].portada);
+            unlinkAsync(imagePath).catch(err => console.error('Error al borrar imagen:', err));
+        }
+
+        const materiales = JSON.parse(cursos[0].imagenes_materiales || '[]');
+        for (const material of materiales) {
+            const filePath = path.join(__dirname, material);
+            unlinkAsync(filePath).catch(err => console.error('Error al borrar material:', err));
+        }
+
+        await db.query('DELETE FROM cursos WHERE id = ?', [idCurso]);
+        
+        res.json({ 
+            success: true,
+            message: 'Curso eliminado correctamente'
+        });
+    } catch (err) {
+        console.error('Error al eliminar el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al eliminar el curso' 
+        });
+    }
+});
 
 // Rutas de cursos
 app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {

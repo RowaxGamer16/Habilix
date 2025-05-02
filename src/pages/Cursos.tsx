@@ -36,6 +36,7 @@ interface Curso {
   ranking: number;
   entrega: string;
   horario: string;
+  id_usuario?: number; // Añadido para compatibilidad con CursoDetalle
 }
 
 const Cursos: React.FC = () => {
@@ -119,7 +120,12 @@ const Cursos: React.FC = () => {
       if (!response.ok) throw new Error('Error al crear curso');
 
       const data = await response.json();
-      setCursos(prev => [...prev, { id: data.id, ...nuevoCurso, ranking: 0 }]);
+      setCursos(prev => [...prev, { 
+        id: data.id, 
+        ...nuevoCurso, 
+        ranking: 0,
+        id_usuario: data.id_usuario // Asegurar compatibilidad con CursoDetalle
+      }]);
       setShowModalCrearCurso(false);
       setNuevoCurso({ nombre: '', descripcion: '', profesor: '', portada: '', categoria: '', precio: 0, entrega: 'Virtual', horario: 'Flexible' });
       setSelectedImage(null);
@@ -139,7 +145,7 @@ const Cursos: React.FC = () => {
   const handleVerCurso = (cursoId: number) => {
     const isUserLoggedIn = !!localStorage.getItem('token');
     if (isUserLoggedIn) {
-      history.push(`/curso/${cursoId}`);
+      history.push(`/curso/${cursoId}`); // Cambiado para coincidir con CursoDetalle
     } else {
       setShowLoginModal(true);
     }
@@ -186,7 +192,7 @@ const Cursos: React.FC = () => {
               <IonCard key={curso.id} className="course-card">
                 <div className="image-container">
                   <img
-                    src={curso.portada || ''}
+                    src={curso.portada ? `${API_URL}${curso.portada}` : ''}
                     alt={curso.nombre}
                     className="course-image"
                     onError={(e) => (e.currentTarget.src = '')}
@@ -274,6 +280,16 @@ const Cursos: React.FC = () => {
                   <IonItem>
                     <IonLabel position="floating">Categoría</IonLabel>
                     <IonInput value={nuevoCurso.categoria} onIonChange={e => setNuevoCurso({ ...nuevoCurso, categoria: e.detail.value || '' })} />
+                  </IonItem>
+                </IonCol>
+                <IonCol size="6">
+                  <IonItem>
+                    <IonLabel position="floating">Precio</IonLabel>
+                    <IonInput 
+                      type="number" 
+                      value={nuevoCurso.precio} 
+                      onIonChange={e => setNuevoCurso({ ...nuevoCurso, precio: Number(e.detail.value) || 0 })} 
+                    />
                   </IonItem>
                 </IonCol>
               </IonRow>

@@ -1,0 +1,105 @@
+.admin-cursos-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.admin-cursos-table {
+    width: 100%;
+}
+
+.table-header {
+    font-weight: bold;
+    border-bottom: 2px solid var(--ion-color-medium);
+    padding: 10px 0;
+}
+
+.table-row {
+    border-bottom: 1px solid var(--ion-color-light-shade);
+    padding: 10px 0;
+    align-items: center;
+}
+
+.table-row ion-col {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+}
+
+.curso-thumbnail {
+    width: 80px;
+    height: 60px;
+    background-color: var(--ion-color-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.curso-thumbnail ion-img {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+}
+
+.thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ion-color-medium);
+}
+
+.curso-descripcion {
+    color: var(--ion-color-medium);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.empty-message {
+    padding: 20px;
+    color: var(--ion-color-medium);
+}
+
+.empty-message ion-icon {
+    margin-bottom: 10px;
+}
+
+.edit-curso-form {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .table-header {
+        display: none;
+    }
+    
+    .table-row {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px 0;
+        border-bottom: 2px solid var(--ion-color-light-shade);
+    }
+    
+    .table-row ion-col {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .table-row ion-col::before {
+        content: attr(data-label);
+        font-weight: bold;
+        margin-right: 10px;
+    }
+    
+    .action-buttons {
+        justify-content: flex-end;
+        width: 100%;
+        margin-top: 10px;
+    }
+}
