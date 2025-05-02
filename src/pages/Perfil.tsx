@@ -101,8 +101,8 @@ const Perfil: React.FC = () => {
     setShowLogoutToast(true);
     setTimeout(() => {
       // Redirige al login y recarga la página
-      window.location.href = '/login';
-      window.location.reload();
+      window.location.assign('/login');
+      
     }, 1500);
   };
 
@@ -127,7 +127,9 @@ const Perfil: React.FC = () => {
   };
 
   const getRoleName = (role: string) => {
-    return role === '1' ? 'Estudiante' : 'Instructor';
+    if (role === '1') return 'Estudiante';
+    if (role === '2') return 'Administrador';
+    return 'Instructor'; // Valor por defecto si no es 1 ni 2
   };
 
   return (

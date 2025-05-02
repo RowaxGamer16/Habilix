@@ -240,6 +240,102 @@ app.put('/api/usuario/actualizar', validateToken, [
     }
 });
 
+// Asegúrate de tener esta ruta en tu backend
+app.get('/api/admin/usuarios', validateToken, async (req, res) => {
+    try {
+        // Verificar que el usuario sea administrador (ROLE = 2)
+        if (req.user.ROLE !== 2) {
+            return res.status(403).json({ 
+                success: false,
+                error: 'Acceso denegado: Se requieren permisos de administrador' 
+            });
+        }
+
+        // Consulta a la base de datos
+        const [rows] = await db.query(`
+            SELECT 
+                ID,
+                NOMBRE_USUARIO,
+                EMAIL,
+                COALESCE(TELEFONO, '') AS TELEFONO,
+                DATE_FORMAT(FECHA_CREACION, '%Y-%m-%d %H:%i:%s') AS FECHA_CREACION,
+                ROLE
+            FROM usuarios
+            ORDER BY FECHA_CREACION DESC
+        `);
+
+        res.json({
+            success: true,
+            data: rows,
+            count: rows.length
+        });
+
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error del servidor',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+// Ruta para eliminar usuarios (admin only) - Versión corregida
+app.delete('/api/admin/usuarios/:id', validateToken, async (req, res) => {
+    try {
+        if (req.user.ROLE !== 2) {
+            return res.status(403).json({ 
+                success: false,
+                error: 'Acceso denegado' 
+            });
+        }
+
+        const { id } = req.params;
+        
+        // Verificar que no sea auto-eliminación
+        if (parseInt(id) === req.user.ID) {
+            return res.status(400).json({
+                success: false,
+                error: 'No puedes eliminarte a ti mismo'
+            });
+        }
+
+        // CORRECCIÓN: Usar db.query con sintaxis MySQL
+        const [result] = await db.query(
+            'DELETE FROM usuarios WHERE ID = ?',
+            [id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Usuario no encontrado'
+            });
+        }
+
+        // Para obtener el usuario eliminado (MySQL no tiene RETURNING)
+        const [deletedUser] = await db.query(
+            'SELECT * FROM usuarios WHERE ID = ?',
+            [id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Usuario eliminado correctamente',
+            deletedUser: deletedUser[0] || null
+        });
+
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error del servidor',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+
+
 // Rutas de cursos
 app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {
     const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;

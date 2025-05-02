@@ -12,6 +12,14 @@ import './Login.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+interface UserData {
+  ID: number;
+  nombre_usuario: string;
+  email: string;
+  ROLE: number;
+  // Agrega otros campos según lo que devuelva tu backend
+}
+
 const Login: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({ nombre_usuario: '', email: '', password: '' });
@@ -25,17 +33,17 @@ const Login: React.FC = () => {
 
   const handleLogin = async () => {
     const { email, password } = loginData;
-
+  
     if (!email || !password) {
       setError('Por favor ingrese su correo y contraseña');
       return;
     }
-
+  
     if (!validateEmail(email)) {
       setError('Por favor ingrese un correo válido');
       return;
     }
-
+  
     setLoading(true);
     
     try {
@@ -47,19 +55,25 @@ const Login: React.FC = () => {
           password: password.trim(),
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(data.error || 'Credenciales incorrectas');
       }
 
+      // Guardar datos en localStorage
       localStorage.setItem('token', data.token);
-      localStorage.setItem('usuario', JSON.stringify(data.usuario));
+      localStorage.setItem('userData', JSON.stringify(data.usuario));
       localStorage.setItem('userId', data.usuario.ID.toString());
+      localStorage.setItem('isAdmin', data.usuario.ROLE === 2 ? 'true' : 'false');
 
-      // Redirección con recarga completa
-      window.location.assign('/Inicio_Usuario');
+      // Redirección basada en el rol
+      if (data.usuario.ROLE === 2) { // Admin
+        window.location.assign('/InicioAdmin');
+      } else { // Usuario normal
+        window.location.assign('/Inicio_Usuario');
+      }
       
     } catch (error: any) {
       console.error('Error en login:', error);
@@ -97,6 +111,7 @@ const Login: React.FC = () => {
           nombre_usuario: nombre_usuario.trim(),
           email: email.trim().toLowerCase(),
           password: password.trim(),
+          ROLE: 1 // Por defecto todos los nuevos usuarios son normales (ROLE = 1)
         }),
       });
 

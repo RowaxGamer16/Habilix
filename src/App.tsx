@@ -9,7 +9,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import { 
   home, school, people, helpCircle, logIn, personCircle, 
   logoFacebook, logoX, chevronForward, logoGoogle, logoInstagram, 
-  call, mail, location 
+  call, mail, location, settings 
 } from 'ionicons/icons';
 import { setupIonicReact } from '@ionic/react';
 
@@ -21,8 +21,8 @@ import Ayuda from './pages/Ayuda';
 import Login from './pages/Login';
 import Perfil from './pages/Perfil';
 import InicioUsuario from './pages/Inicio_Usuario';
-import InicioAdmin from './pages/Admin/InicioAdmin';
-import GestionUsuarios from './pages/Admin/GestionUsuarios';
+import InicioAdmin from './pages/InicioAdmin';
+import GestionUsuarios from './pages/GestionUsuarios';
 import CursoDetalle from './pages/CursoDetalle';
 import Cursos_Usuario from './pages/Cursos_Usuario';
 import PrivateRoute from './pages/PrivateRoute';
@@ -44,46 +44,49 @@ import './App.css';
 
 setupIonicReact();
 
-const menuItems = [
-  {
-    icon: home,
-    label: 'Inicio',
-    link: (isLoggedIn: boolean) => isLoggedIn ? "/Inicio_Usuario" : "/Inicio",
-    color: '#4a00e0'
-  },
-  {
-    icon: school,
-    label: 'Cursos',
-    link: () => "/Cursos",
-    color: '#6a3093'
-  },
-  {
-    icon: people,
-    label: 'Contactos',
-    link: () => "/Contactos",
-    color: '#8e2de2'
-  },
-  {
-    icon: helpCircle,
-    label: 'Ayuda',
-    link: () => "/Ayuda",
-    color: '#4776E6'
-  },
-  {
-    icon: (isLoggedIn: boolean) => isLoggedIn ? personCircle : logIn,
-    label: (isLoggedIn: boolean) => isLoggedIn ? 'Perfil' : 'Login',
-    link: (isLoggedIn: boolean) => isLoggedIn ? "/Perfil" : "/Login",
-    color: (isLoggedIn: boolean) => isLoggedIn ? '#00b09b' : '#1FA2FF'
-  }
-];
-
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const adminStatus = localStorage.getItem('isAdmin') === 'true';
     setIsLoggedIn(!!token);
+    setIsAdmin(adminStatus);
   }, []);
+
+  const getMenuItems = () => [
+    {
+      icon: home,
+      label: 'Inicio',
+      link: isLoggedIn ? (isAdmin ? "/InicioAdmin" : "/Inicio_Usuario") : "/Inicio",
+      color: '#4a00e0'
+    },
+    {
+      icon: school,
+      label: 'Cursos',
+      link: "/Cursos",
+      color: '#6a3093'
+    },
+    {
+      icon: people,
+      label: 'Contactos',
+      link: "/Contactos",
+      color: '#8e2de2'
+    },
+    {
+      icon: helpCircle,
+      label: 'Ayuda',
+      link: "/Ayuda",
+      color: '#4776E6'
+    },
+    {
+      icon: isLoggedIn ? personCircle : logIn,
+      label: isLoggedIn ? 'Perfil' : 'Login',
+      link: isLoggedIn ? "/Perfil" : "/Login",
+      color: isLoggedIn ? '#00b09b' : '#1FA2FF'
+    }
+  ];
 
   return (
     <IonApp>
@@ -128,11 +131,11 @@ const App: React.FC = () => {
             fontFamily: 'Josefin Sans, sans-serif'
           }}>
             <IonList lines="none" style={{ padding: '15px' }}>
-              {menuItems.map((item, index) => (
+              {getMenuItems().map((item, index) => (
                 <IonItem
                   key={index}
                   button
-                  routerLink={item.link(isLoggedIn)}
+                  routerLink={item.link}
                   className="menu-item"
                   style={{
                     margin: '12px 0',
@@ -142,14 +145,14 @@ const App: React.FC = () => {
                     transition: 'all 0.3s ease',
                     '--background-hover': '#f1f1f1',
                     '--background-activated': '#e9ecef',
-                    borderLeft: `5px solid ${typeof item.color === 'function' ? item.color(isLoggedIn) : item.color}`
+                    borderLeft: `5px solid ${item.color}`
                   }}
                 >
                   <IonIcon
-                    icon={typeof item.icon === 'function' ? item.icon(isLoggedIn) : item.icon}
+                    icon={item.icon}
                     slot="start"
                     style={{
-                      color: typeof item.color === 'function' ? item.color(isLoggedIn) : item.color,
+                      color: item.color,
                       fontSize: '1.4rem'
                     }}
                   />
@@ -159,7 +162,7 @@ const App: React.FC = () => {
                     fontFamily: 'Josefin Sans, sans-serif',
                     letterSpacing: '0.5px'
                   }}>
-                    {typeof item.label === 'function' ? item.label(isLoggedIn) : item.label}
+                    {item.label}
                   </IonLabel>
                   <IonIcon
                     icon={chevronForward}
@@ -205,7 +208,9 @@ const App: React.FC = () => {
               <IonRouterOutlet>
                 {/* Public Routes */}
                 <Route exact path="/Inicio" render={() => (
-                  isLoggedIn ? <Redirect to="/Inicio_Usuario" /> : <Inicio />
+                  isLoggedIn ? 
+                    (isAdmin ? <Redirect to="/InicioAdmin" /> : <Redirect to="/Inicio_Usuario" />) 
+                    : <Inicio />
                 )} />
                 <Route exact path="/Cursos" component={Cursos} />
                 <Route exact path="/Contactos" component={Contactos} />
@@ -214,18 +219,18 @@ const App: React.FC = () => {
                 <Route path="/curso/:id" component={CursoDetalle} exact />
                 <Route exact path="/EditarPerfil" component={EditarPerfil} />
 
-                {/* Admin Routes
-                
                 {/* Private Routes */}
-                <PrivateRoute exact path="/Cursos_Usuarios" component={Cursos_Usuario} />
-                <PrivateRoute exact path="/Perfil" component={Perfil}  />
-                <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario}  />
-                <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin}  />
-                <PrivateRoute exact path="/GestionUsuarios" component={GestionUsuarios}  />
+                <PrivateRoute exact path="/Cursos_Usuario" component={Cursos_Usuario} />
+                <PrivateRoute exact path="/Perfil" component={Perfil} />
+                <PrivateRoute exact path="/Inicio_Usuario" component={InicioUsuario} />
+                <PrivateRoute exact path="/InicioAdmin" component={InicioAdmin} />
+                <PrivateRoute exact path="/GestionUsuarios" component={GestionUsuarios} />
                 
                 {/* Default Route */}
                 <Route exact path="/" render={() => (
-                  isLoggedIn ? <Redirect to="/Inicio_Usuario" /> : <Redirect to="/Inicio" />
+                  isLoggedIn ? 
+                    (isAdmin ? <Redirect to="/InicioAdmin" /> : <Redirect to="/Inicio_Usuario" />) 
+                    : <Redirect to="/Inicio" />
                 )} />
               </IonRouterOutlet>
             </IonContent>
