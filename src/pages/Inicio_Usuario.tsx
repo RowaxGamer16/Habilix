@@ -61,51 +61,67 @@ type Course = {
   creatorAvatar: string;
 };
 
+type UserData = {
+  role: string;
+  createdCourses: number;
+  takenCourses: number;
+  rating: number;
+};
+
+type ApiError = {
+  message: string;
+  error?: string;
+};
+
+type ApiResponse = {
+  usuario: {
+    ID: number;
+    NOMBRE_USUARIO: string;
+    EMAIL: string;
+    ROLE: string;
+    TELEFONO?: string;
+    FECHA_CREACION: string;
+    CURSOS_CREADOS?: number;
+    CURSOS_TOMADOS?: number;
+    RATING?: number;
+  };
+};
+
 const Inicio_Usuario: React.FC = () => {
-  const [userData, setUserData] = useState({
-    role: 'Instructor',
-    createdCourses: 5,
-    takenCourses: 12,
-    rating: 4.7
+  const [userData, setUserData] = useState<UserData>({
+    role: 'Usuario',
+    createdCourses: 0,
+    takenCourses: 0,
+    rating: 0
   });
   const [activeSegment, setActiveSegment] = useState('popular');
-  const [error, setError] = useState<string | undefined>(undefined);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [notificationsCount] = useState(2);
   const history = useHistory();
   const [userName, setUserName] = useState<string>('');
-  const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('usuario');
-    
-    // Redirigir al login y forzar recarga completa
-    window.location.href = '/login';
-    // O alternativamente:
-    // window.location.replace('/login');
+    history.push('/login');
+    window.location.reload();
   };
 
   useEffect(() => {
-
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem('token'); // Obtener token
-        const storedUserId = localStorage.getItem('userId'); // Obtener ID del usuario
-
-        if (!token || !storedUserId) {
-          setError('Faltan credenciales');
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          setError('No hay sesión activa');
           setIsLoading(false);
+          history.push('/login');
           return;
         }
 
-        setUserId(storedUserId); // Guardar el ID en el estado
-
-        const response = await fetch(`http://localhost:5000/api/usuario/${storedUserId}`, {
+        const response = await fetch('http://localhost:5000/api/usuario', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -114,26 +130,50 @@ const Inicio_Usuario: React.FC = () => {
         });
 
         if (!response.ok) {
-          throw new Error('Error al obtener el usuario');
+          const errorData: ApiError = await response.json();
+          throw new Error(errorData.error || 'Error al obtener datos del usuario');
         }
 
-        const data = await response.json();
-        console.log('Datos del usuario:', data); // Verifica la respuesta del backend
-
-        // Asegúrate de que el backend devuelva el nombre en la propiedad correcta
-        if (data.NOMBRE_USUARIO) {
-          setUserName(data.NOMBRE_USUARIO); // Guardar el nombre del usuario
-        } else {
-          setError('Nombre de usuario no encontrado en la respuesta');
+        const data: ApiResponse = await response.json();
+        
+        if (!data.usuario || typeof data.usuario.NOMBRE_USUARIO !== 'string') {
+          throw new Error('Estructura de datos del usuario incorrecta');
         }
 
-        setIsLoading(false); // Dejar de mostrar el spinner
-      } catch (error) {
-        setError('Error al obtener los datos del usuario');
+        setUserName(data.usuario.NOMBRE_USUARIO);
+        
+        setUserData({
+          role: data.usuario.ROLE === '1' ? 'Estudiante' : 'Instructor',
+          createdCourses: data.usuario.CURSOS_CREADOS || 0,
+          takenCourses: data.usuario.CURSOS_TOMADOS || 0,
+          rating: data.usuario.RATING || 0
+        });
+
         setIsLoading(false);
+      } catch (err) {
+        let errorMessage = 'Error al cargar los datos del usuario';
+        
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        }
+
+        console.error('Error al obtener datos:', errorMessage);
+        setError(errorMessage);
+        setIsLoading(false);
+        
+        if (errorMessage.toLowerCase().includes('token') || 
+            errorMessage.toLowerCase().includes('autenticación')) {
+          localStorage.removeItem('token');
+          history.push('/login');
+        }
       }
     };
 
+    fetchUserData();
+
+    // Simulación de carga de cursos
     setLoading(true);
     setTimeout(() => {
       setCourses([
@@ -182,7 +222,7 @@ const Inicio_Usuario: React.FC = () => {
       ]);
       setLoading(false);
     }, 1500);
-  }, []);
+  }, [history]);
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -219,17 +259,28 @@ const Inicio_Usuario: React.FC = () => {
       </IonHeader>
 
       <IonContent>
+        <IonToast
+          isOpen={!!error}
+          message={error || ''}
+          duration={5000}
+          onDidDismiss={() => setError(null)}
+          color="danger"
+          buttons={[{
+            text: 'Cerrar',
+            role: 'cancel'
+          }]}
+        />
+
         <IonCard className="welcome-card">
           <IonCardHeader>
             <IonCardSubtitle>Bienvenid@ de vuelta</IonCardSubtitle>
             {isLoading ? (
-              <IonSpinner name="crescent" />
-            ) : error ? (
-              <div>
-                <h2>{error}</h2>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <IonSpinner name="crescent" style={{ marginRight: '8px' }} />
+                <span>Cargando...</span>
               </div>
             ) : (
-              <IonCardTitle>{userName}</IonCardTitle>
+              <IonCardTitle>{userName || 'Usuario'}</IonCardTitle>
             )}
           </IonCardHeader>
           <IonCardContent>
@@ -249,7 +300,7 @@ const Inicio_Usuario: React.FC = () => {
                 </div>
                 <div className="stat-item">
                   <IonIcon icon={star} color="warning" />
-                  <span>Rating: {userData.rating}/5.0</span>
+                  <span>Rating: {userData.rating.toFixed(1)}/5.0</span>
                 </div>
               </div>
             </div>
@@ -320,11 +371,11 @@ const Inicio_Usuario: React.FC = () => {
                       <div className="course-meta">
                         <span className="rating">
                           <IonIcon icon={star} color="warning" />
-                          {course.rating}
+                          {course.rating.toFixed(1)}
                         </span>
                         <span className="students">
                           <IonIcon icon={people} color="medium" />
-                          {course.students}
+                          {course.students.toLocaleString()}
                         </span>
                         {course.isFree ? (
                           <IonChip color="success">GRATIS</IonChip>
@@ -375,14 +426,6 @@ const Inicio_Usuario: React.FC = () => {
             </IonButton>
           </IonItem>
         </IonList>
-
-        <IonToast
-          isOpen={!!error}
-          message={error}
-          duration={3000}
-          onDidDismiss={() => setError('')}
-          color="danger"
-        />
       </IonContent>
     </IonPage>
   );
