@@ -2,10 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonButton, IonIcon, IonCard, IonCardContent, IonLabel, IonItem,
-  IonItemDivider, IonLoading, IonToast, IonList, IonThumbnail
+  IonItemDivider, IonLoading, IonToast, IonList, IonThumbnail,
+  IonModal
 } from '@ionic/react';
 import { useParams, useHistory } from 'react-router-dom';
-import { star, cloudUpload, trash, create, arrowBack, document } from 'ionicons/icons';
+import { star, cloudUpload, trash, create, arrowBack, document, eye } from 'ionicons/icons';
 
 const API_URL = 'http://localhost:5000/api';
 const LOCAL_STORAGE_KEY = 'curso_materiales_';
@@ -39,6 +40,7 @@ interface MaterialLocal {
   fechaSubida: string;
   tamaño: number;
   tipo: string;
+  url?: string;
 }
 
 const CursoDetalle: React.FC = () => {
@@ -52,6 +54,8 @@ const CursoDetalle: React.FC = () => {
   const [mostrarToast, setMostrarToast] = useState(false);
   const [esCreador, setEsCreador] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
+  const [materialAVisualizar, setMaterialAVisualizar] = useState<MaterialLocal | null>(null);
+  const [mostrarVisor, setMostrarVisor] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const token = localStorage.getItem('token');
@@ -80,6 +84,16 @@ const CursoDetalle: React.FC = () => {
     });
   };
 
+  const base64ToBlob = (base64: string, contentType: string) => {
+    const byteCharacters = atob(base64.split(',')[1]);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: contentType });
+  };
+
   const cargarMaterialesLocales = (cursoId: string): MaterialLocal[] => {
     const datos = localStorage.getItem(`${LOCAL_STORAGE_KEY}${cursoId}`);
     return datos ? JSON.parse(datos) : [];
@@ -88,6 +102,21 @@ const CursoDetalle: React.FC = () => {
   const guardarMaterialesLocales = (cursoId: string, materiales: MaterialLocal[]) => {
     localStorage.setItem(`${LOCAL_STORAGE_KEY}${cursoId}`, JSON.stringify(materiales));
   };
+
+  const visualizarMaterial = (material: MaterialLocal) => {
+    const blob = base64ToBlob(material.contenido, material.tipo);
+    const url = URL.createObjectURL(blob);
+    setMaterialAVisualizar({ ...material, url });
+    setMostrarVisor(true);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (materialAVisualizar?.url) {
+        URL.revokeObjectURL(materialAVisualizar.url);
+      }
+    };
+  }, [materialAVisualizar]);
 
   useEffect(() => {
     const fetchCurso = async () => {
@@ -377,15 +406,19 @@ const CursoDetalle: React.FC = () => {
                         {getFileIcon(material.tipo)}
                       </IonThumbnail>
                       <IonLabel>
-                        <a
-                          href={material.contenido}
-                          download={material.nombre}
-                          style={{ textDecoration: 'none' }}
-                        >
+                        <div onClick={() => visualizarMaterial(material)} style={{ cursor: 'pointer' }}>
                           {nombreLimpio}
                           <p>Tamaño: {(material.tamaño / 1024).toFixed(2)} KB</p>
-                        </a>
+                        </div>
                       </IonLabel>
+                      <IonButton
+                        slot="end"
+                        size="small"
+                        color="primary"
+                        onClick={() => visualizarMaterial(material)}
+                      >
+                        <IonIcon icon={eye} />
+                      </IonButton>
                       {esCreador && (
                         <IonButton
                           slot="end"
@@ -499,6 +532,60 @@ const CursoDetalle: React.FC = () => {
             </IonButton>
           </IonCardContent>
         </IonCard>
+
+        {/* Visor de Materiales */}
+        <IonModal isOpen={mostrarVisor} onDidDismiss={() => setMostrarVisor(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{materialAVisualizar?.nombre}</IonTitle>
+              <IonButton slot="end" onClick={() => setMostrarVisor(false)}>
+                Cerrar
+              </IonButton>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            {materialAVisualizar && (
+              <div style={{ height: '100%', width: '100%' }}>
+                {materialAVisualizar.tipo.includes('pdf') && (
+                  <embed 
+                    src={materialAVisualizar.url} 
+                    type="application/pdf" 
+                    width="100%" 
+                    height="100%"
+                  />
+                )}
+                {materialAVisualizar.tipo.includes('image') && (
+                  <img 
+                    src={materialAVisualizar.url} 
+                    alt={materialAVisualizar.nombre}
+                    style={{ maxWidth: '100%', maxHeight: '100%' }}
+                  />
+                )}
+                {(materialAVisualizar.tipo.includes('word') || 
+                  materialAVisualizar.tipo.includes('powerpoint')) && (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <p>Este tipo de archivo no se puede previsualizar directamente</p>
+                    <IonButton 
+                      href={materialAVisualizar.contenido}
+                      download={materialAVisualizar.nombre}
+                    >
+                      Descargar para ver
+                    </IonButton>
+                  </div>
+                )}
+                <div style={{ marginTop: '20px' }}>
+                  <IonButton 
+                    expand="block" 
+                    href={materialAVisualizar.contenido}
+                    download={materialAVisualizar.nombre}
+                  >
+                    Descargar
+                  </IonButton>
+                </div>
+              </div>
+            )}
+          </IonContent>
+        </IonModal>
 
         <IonLoading isOpen={subiendo} message="Subiendo materiales..." />
         <IonToast
