@@ -524,7 +524,7 @@ const CursoDetalle: React.FC = () => {
             <IonButton
               expand="block"
               color="medium"
-              onClick={() => history.push('/cursos')}
+              onClick={() => history.goBack()}
               style={{ marginTop: '2rem' }}
             >
               <IonIcon slot="start" icon={arrowBack} />
