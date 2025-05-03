@@ -64,6 +64,7 @@ const db = await mysql.createPool({
 });
 console.log('✅ Conectado a la base de datos');
 
+// Middlewares
 const validateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     if (!authHeader) return res.status(403).json({ error: 'No se proporcionó token' });
@@ -72,20 +73,29 @@ const validateToken = async (req, res, next) => {
     console.log('🔐 Token recibido:', token);
   
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
-      console.log('✅ Token decodificado:', decoded);
-  
-      const [results] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [decoded.id]);
-      if (results.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
-  
-      req.user = results[0];
-      next();
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
+        console.log('✅ Token decodificado:', decoded);
+    
+        const [results] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [decoded.id]);
+        if (results.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
+    
+        req.user = results[0];
+        next();
     } catch (err) {
-      console.error('❌ Error al verificar token:', err.message);
-      return res.status(401).json({ 
-        error: 'Token inválido',
-        details: process.env.NODE_ENV === 'development' ? err.message : undefined
-      });
+        console.error('❌ Error al verificar token:', err.message);
+        return res.status(401).json({ 
+            error: 'Token inválido',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+};
+
+const isAdmin = (req, res, next) => {
+    if (req.user && req.user.ROLE === 2) {
+        next();
+    } else {
+        console.error('⚠️ Intento de acceso no autorizado a ruta de admin por usuario:', req.user?.ID);
+        res.status(403).json({ error: 'Acceso denegado. Se requieren privilegios de administrador' });
     }
 };
 
@@ -177,6 +187,7 @@ app.post('/api/register', [
     }
 });
 
+// Rutas de usuario
 app.get('/api/usuario', validateToken, async (req, res) => {
     try {
         res.json({
@@ -242,7 +253,6 @@ app.put('/api/usuario/actualizar', validateToken, [
                 FECHA_CREACION: user[0].FECHA_CREACION
             }
         });
-
     } catch (error) {
         console.error('Error al actualizar usuario:', error);
         res.status(500).json({ 
@@ -253,18 +263,9 @@ app.put('/api/usuario/actualizar', validateToken, [
     }
 });
 
-// Asegúrate de tener esta ruta en tu backend
-app.get('/api/admin/usuarios', validateToken, async (req, res) => {
+// Rutas de administrador - Usuarios
+app.get('/api/admin/usuarios', validateToken, isAdmin, async (req, res) => {
     try {
-        // Verificar que el usuario sea administrador (ROLE = 2)
-        if (req.user.ROLE !== 2) {
-            return res.status(403).json({ 
-                success: false,
-                error: 'Acceso denegado: Se requieren permisos de administrador' 
-            });
-        }
-
-        // Consulta a la base de datos
         const [rows] = await db.query(`
             SELECT 
                 ID,
@@ -282,7 +283,6 @@ app.get('/api/admin/usuarios', validateToken, async (req, res) => {
             data: rows,
             count: rows.length
         });
-
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
         res.status(500).json({ 
@@ -292,19 +292,11 @@ app.get('/api/admin/usuarios', validateToken, async (req, res) => {
         });
     }
 });
-// Ruta para eliminar usuarios (admin only) - Versión corregida
-app.delete('/api/admin/usuarios/:id', validateToken, async (req, res) => {
-    try {
-        if (req.user.ROLE !== 2) {
-            return res.status(403).json({ 
-                success: false,
-                error: 'Acceso denegado' 
-            });
-        }
 
+app.delete('/api/admin/usuarios/:id', validateToken, isAdmin, async (req, res) => {
+    try {
         const { id } = req.params;
         
-        // Verificar que no sea auto-eliminación
         if (parseInt(id) === req.user.ID) {
             return res.status(400).json({
                 success: false,
@@ -312,11 +304,7 @@ app.delete('/api/admin/usuarios/:id', validateToken, async (req, res) => {
             });
         }
 
-        // CORRECCIÓN: Usar db.query con sintaxis MySQL
-        const [result] = await db.query(
-            'DELETE FROM usuarios WHERE ID = ?',
-            [id]
-        );
+        const [result] = await db.query('DELETE FROM usuarios WHERE ID = ?', [id]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({
@@ -325,18 +313,10 @@ app.delete('/api/admin/usuarios/:id', validateToken, async (req, res) => {
             });
         }
 
-        // Para obtener el usuario eliminado (MySQL no tiene RETURNING)
-        const [deletedUser] = await db.query(
-            'SELECT * FROM usuarios WHERE ID = ?',
-            [id]
-        );
-
         res.json({
             success: true,
-            message: 'Usuario eliminado correctamente',
-            deletedUser: deletedUser[0] || null
+            message: 'Usuario eliminado correctamente'
         });
-
     } catch (error) {
         console.error('Error al eliminar usuario:', error);
         res.status(500).json({ 
@@ -347,31 +327,149 @@ app.delete('/api/admin/usuarios/:id', validateToken, async (req, res) => {
     }
 });
 
-
-
-// Rutas de cursos
-app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {
-    const { nombre, descripcion, categoria, precio, entrega, horario, profesor } = req.body;
-    const portada = req.file ? `/Uploads/${req.file.filename}` : '';
-    const id_usuario = req.user.ID;
-
-    console.log('📚 Creando curso:', { nombre, id_usuario, profesor });
-
+// Rutas de administrador - Cursos
+app.get('/api/admin/cursos', validateToken, isAdmin, async (req, res) => {
     try {
-        const query = `
-            INSERT INTO cursos (nombre, descripcion, portada, categoria, precio, entrega, horario, profesor, ranking, opiniones, id_usuario, imagenes_materiales)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, '[]')
-        `;
-        const [result] = await db.query(query, [nombre, descripcion, portada, categoria, precio, entrega, horario, profesor, id_usuario]);
-
-        res.json({ success: true, id: result.insertId });
-        console.log('✅ Curso creado:', result.insertId);
+        const [results] = await db.query(`
+            SELECT c.*, u.NOMBRE_USUARIO as profesor 
+            FROM cursos c
+            JOIN usuarios u ON c.id_usuario = u.ID
+        `);
+        res.json({
+            success: true,
+            data: results
+        });
     } catch (err) {
-        console.error('❌ Error al crear curso:', err);
-        res.status(500).json({ error: 'Error al crear el curso' });
+        console.error('Error al obtener cursos:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al obtener los cursos' 
+        });
     }
 });
 
+app.get('/api/admin/cursos/:id', validateToken, isAdmin, async (req, res) => {
+    const id = req.params.id;
+    try {
+        const [results] = await db.query(`
+            SELECT c.*, u.NOMBRE_USUARIO as profesor 
+            FROM cursos c
+            JOIN usuarios u ON c.id_usuario = u.ID
+            WHERE c.id = ?
+        `, [id]);
+        
+        if (results.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Curso no encontrado' 
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: results[0]
+        });
+    } catch (err) {
+        console.error('Error al obtener el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al obtener el curso' 
+        });
+    }
+});
+
+app.put('/api/admin/cursos/:id', validateToken, isAdmin, upload.single('portada'), async (req, res) => {
+    const idCurso = req.params.id;
+    const { nombre, descripcion, categoria, precio, entrega, horario, id_usuario } = req.body;
+    const portada = req.file ? `/Uploads/${req.file.filename}` : null;
+
+    try {
+        const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ?', [idCurso]);
+        if (cursos.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Curso no encontrado' 
+            });
+        }
+
+        if (!nombre || !descripcion || !id_usuario) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Nombre, descripción y ID de usuario son campos requeridos' 
+            });
+        }
+
+        const updates = {
+            nombre,
+            descripcion,
+            categoria: categoria || null,
+            precio: precio || null,
+            entrega: entrega || null,
+            horario: horario || null,
+            id_usuario
+        };
+        
+        if (portada) updates.portada = portada;
+
+        if (portada && cursos[0].portada) {
+            const oldImagePath = path.join(__dirname, cursos[0].portada);
+            unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
+        }
+
+        await db.query('UPDATE cursos SET ? WHERE id = ?', [updates, idCurso]);
+        
+        res.json({ 
+            success: true,
+            message: 'Curso actualizado correctamente'
+        });
+    } catch (err) {
+        console.error('Error al actualizar el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al actualizar el curso' 
+        });
+    }
+});
+
+app.delete('/api/admin/cursos/:id', validateToken, isAdmin, async (req, res) => {
+    const idCurso = req.params.id;
+
+    try {
+        const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ?', [idCurso]);
+        if (cursos.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Curso no encontrado' 
+            });
+        }
+
+        if (cursos[0].portada) {
+            const imagePath = path.join(__dirname, cursos[0].portada);
+            unlinkAsync(imagePath).catch(err => console.error('Error al borrar imagen:', err));
+        }
+
+        const materiales = JSON.parse(cursos[0].imagenes_materiales || '[]');
+        for (const material of materiales) {
+            const filePath = path.join(__dirname, material);
+            unlinkAsync(filePath).catch(err => console.error('Error al borrar material:', err));
+        }
+
+        await db.query('DELETE FROM cursos WHERE id = ?', [idCurso]);
+        
+        res.json({ 
+            success: true,
+            message: 'Curso eliminado correctamente'
+        });
+    } catch (err) {
+        console.error('Error al eliminar el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al eliminar el curso' 
+        });
+    }
+});
+
+// Rutas públicas de cursos
 app.get('/api/cursos', async (req, res) => {
     try {
         const [results] = await db.query(`
@@ -379,11 +477,16 @@ app.get('/api/cursos', async (req, res) => {
             FROM cursos c
             JOIN usuarios u ON c.id_usuario = u.ID
         `);
-        console.log('📥 Cursos obtenidos');
-        res.json(results);
+        res.json({
+            success: true,
+            data: results
+        });
     } catch (err) {
-        console.error('❌ Error al obtener cursos:', err);
-        res.status(500).json({ error: 'Error al obtener los cursos' });
+        console.error('Error al obtener cursos:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al obtener los cursos' 
+        });
     }
 });
 
@@ -398,60 +501,106 @@ app.get('/api/cursos/:id', async (req, res) => {
         `, [id]);
         
         if (results.length === 0) {
-            return res.status(404).json({ error: 'Curso no encontrado' });
+            return res.status(404).json({ 
+                success: false,
+                error: 'Curso no encontrado' 
+            });
         }
         
-        console.log('📥 Curso obtenido:', id);
-        res.json(results[0]);
+        res.json({
+            success: true,
+            data: results[0]
+        });
     } catch (err) {
-        console.error('❌ Error al obtener el curso:', err);
-        res.status(500).json({ error: 'Error al obtener el curso' });
+        console.error('Error al obtener el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al obtener el curso' 
+        });
+    }
+});
+
+// Rutas de cursos protegidas (para profesores/propietarios)
+app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {
+    const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
+    const portada = req.file ? `/Uploads/${req.file.filename}` : '';
+    const id_usuario = req.user.ID;
+
+    try {
+        if (!nombre || !descripcion) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Nombre y descripción son campos requeridos' 
+            });
+        }
+
+        const [result] = await db.query(`
+            INSERT INTO cursos (nombre, descripcion, portada, categoria, precio, entrega, horario, id_usuario, ranking, opiniones, imagenes_materiales)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, '[]', '[]')
+        `, [nombre, descripcion, portada, categoria, precio, entrega, horario, id_usuario]);
+
+        res.json({ 
+            success: true, 
+            data: { id: result.insertId }
+        });
+    } catch (err) {
+        console.error('Error al crear curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al crear el curso' 
+        });
     }
 });
 
 app.put('/api/cursos/:id', validateToken, upload.single('portada'), async (req, res) => {
     const idCurso = req.params.id;
-    const { nombre, descripcion, categoria, precio, entrega, horario, profesor } = req.body;
+    const { nombre, descripcion, categoria, precio, entrega, horario } = req.body;
     const portada = req.file ? `/Uploads/${req.file.filename}` : null;
 
     try {
         const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
-        if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para editar este curso' });
-
-        // Validar campos requeridos
-        if (!nombre || !descripcion || !profesor) {
-            return res.status(400).json({ error: 'Nombre, descripción y profesor son campos requeridos' });
+        if (cursos.length === 0) {
+            return res.status(403).json({ 
+                success: false,
+                error: 'No tienes permiso para editar este curso' 
+            });
         }
 
-        const updates = {};
-        if (nombre) updates.nombre = nombre;
-        if (descripcion) updates.descripcion = descripcion;
-        if (categoria) updates.categoria = categoria;
-        if (precio) updates.precio = precio;
-        if (entrega) updates.entrega = entrega;
-        if (horario) updates.horario = horario;
-        if (profesor) updates.profesor = profesor;
+        if (!nombre || !descripcion) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'Nombre y descripción son campos requeridos' 
+            });
+        }
+
+        const updates = {
+            nombre,
+            descripcion,
+            categoria: categoria || null,
+            precio: precio || null,
+            entrega: entrega || null,
+            horario: horario || null
+        };
+        
         if (portada) updates.portada = portada;
-
-        if (Object.keys(updates).length === 0) {
-            return res.status(400).json({ error: 'No se proporcionaron campos para actualizar' });
-        }
 
         if (portada && cursos[0].portada) {
             const oldImagePath = path.join(__dirname, cursos[0].portada);
             unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
         }
 
-        const fields = Object.keys(updates).map((key) => `${key} = ?`);
-        const values = Object.values(updates);
-        values.push(idCurso);
-
-        await db.query(`UPDATE cursos SET ${fields.join(', ')} WHERE id = ?`, values);
-        console.log('📝 Curso actualizado:', idCurso);
-        res.json({ success: true });
+        await db.query('UPDATE cursos SET ? WHERE id = ?', [updates, idCurso]);
+        
+        res.json({ 
+            success: true,
+            message: 'Curso actualizado correctamente'
+        });
     } catch (err) {
-        console.error('❌ Error al actualizar el curso:', err);
-        res.status(500).json({ error: 'Error al actualizar el curso' });
+        console.error('Error al actualizar el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al actualizar el curso' 
+        });
     }
 });
 
@@ -460,7 +609,12 @@ app.delete('/api/cursos/:id', validateToken, async (req, res) => {
 
     try {
         const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
-        if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para eliminar este curso' });
+        if (cursos.length === 0) {
+            return res.status(403).json({ 
+                success: false,
+                error: 'No tienes permiso para eliminar este curso' 
+            });
+        }
 
         if (cursos[0].portada) {
             const imagePath = path.join(__dirname, cursos[0].portada);
@@ -474,86 +628,45 @@ app.delete('/api/cursos/:id', validateToken, async (req, res) => {
         }
 
         await db.query('DELETE FROM cursos WHERE id = ?', [idCurso]);
-        console.log('🗑️ Curso eliminado:', idCurso);
-        res.json({ success: true });
+        
+        res.json({ 
+            success: true,
+            message: 'Curso eliminado correctamente'
+        });
     } catch (err) {
-        console.error('❌ Error al eliminar el curso:', err);
-        res.status(500).json({ error: 'Error al eliminar el curso' });
+        console.error('Error al eliminar el curso:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al eliminar el curso' 
+        });
     }
 });
 
-app.post('/api/cursos/:id/comentario', validateToken, async (req, res) => {
-    const id = req.params.id;
-    const { comentario } = req.body;
-    const usuarioId = req.user.ID;
-
-    try {
-        const comentarioCompleto = {
-            usuarioId,
-            texto: comentario,
-            fecha: new Date().toISOString()
-        };
-
-        await db.query(`UPDATE cursos SET opiniones = JSON_ARRAY_APPEND(opiniones, '$', ?) WHERE id = ?`, [JSON.stringify(comentarioCompleto), id]);
-        console.log('💬 Comentario agregado al curso:', id);
-        res.json({ success: true });
-    } catch (err) {
-        console.error('❌ Error al agregar el comentario:', err);
-        res.status(500).json({ error: 'Error al agregar el comentario' });
-    }
-});
-
-app.put('/api/cursos/:id/ranking', validateToken, async (req, res) => {
-    const id = req.params.id;
-    const { ranking } = req.body;
-    const usuarioId = req.user.ID;
-
-    try {
-        const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ?', [id]);
-        if (cursos.length === 0) return res.status(404).json({ error: 'Curso no encontrado' });
-
-        const curso = cursos[0];
-        const nuevoRanking = (curso.ranking * curso.num_valoraciones + ranking) / (curso.num_valoraciones + 1);
-
-        await db.query('UPDATE cursos SET ranking = ?, num_valoraciones = num_valoraciones + 1 WHERE id = ?', [nuevoRanking, id]);
-        console.log('⭐ Ranking actualizado para curso:', id);
-        res.json({ success: true, nuevoRanking });
-    } catch (err) {
-        console.error('❌ Error al actualizar el ranking:', err);
-        res.status(500).json({ error: 'Error al actualizar el ranking' });
-    }
-});
-
+// Rutas de materiales y comentarios
 app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales', 10), async (req, res) => {
     const idCurso = req.params.id;
 
     try {
         const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
-        if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para modificar este curso' });
+        if (cursos.length === 0) {
+            return res.status(403).json({ 
+                success: false,
+                error: 'No tienes permiso para modificar este curso' 
+            });
+        }
 
-        const archivos = req.files.map(file => {
-            const nombreOriginal = file.originalname;
-            const extension = path.extname(nombreOriginal);
-            const nombreBase = path.basename(nombreOriginal, extension);
-            const nuevoNombre = `${nombreBase}-${Date.now()}${extension}`;
-            const nuevoPath = path.join(__dirname, 'Uploads', nuevoNombre);
-            fs.renameSync(file.path, nuevoPath);
-            return `/Uploads/${nuevoNombre}`;
-        });
-
+        const archivos = req.files.map(file => `/Uploads/${file.filename}`);
         const materialesActuales = JSON.parse(cursos[0].imagenes_materiales || '[]');
         const nuevosMateriales = [...materialesActuales, ...archivos];
 
         await db.query('UPDATE cursos SET imagenes_materiales = ? WHERE id = ?', [JSON.stringify(nuevosMateriales), idCurso]);
 
-        console.log('📎 Materiales agregados al curso:', idCurso);
         res.json({ 
-            success: true, 
-            nuevosMateriales: archivos,
-            nombresOriginales: req.files.map(file => file.originalname)
+            success: true,
+            data: nuevosMateriales
         });
     } catch (err) {
-        console.error('❌ Error al agregar materiales:', err);
+        console.error('Error al agregar materiales:', err);
         
         if (req.files) {
             for (const file of req.files) {
@@ -562,7 +675,10 @@ app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales',
             }
         }
         
-        res.status(500).json({ error: 'Error al agregar materiales' });
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al agregar materiales' 
+        });
     }
 });
 
@@ -572,7 +688,12 @@ app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
 
     try {
         const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
-        if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para modificar este curso' });
+        if (cursos.length === 0) {
+            return res.status(403).json({ 
+                success: false,
+                error: 'No tienes permiso para modificar este curso' 
+            });
+        }
 
         const materialesActuales = JSON.parse(cursos[0].imagenes_materiales || '[]');
         const nuevosMateriales = materialesActuales.filter(material => {
@@ -586,19 +707,98 @@ app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
 
         await db.query('UPDATE cursos SET imagenes_materiales = ? WHERE id = ?', [JSON.stringify(nuevosMateriales), idCurso]);
 
-        console.log('🗑️ Material eliminado del curso:', archivo);
-        res.json({ success: true, nuevosMateriales });
+        res.json({ 
+            success: true,
+            data: nuevosMateriales
+        });
     } catch (err) {
-        console.error('❌ Error al eliminar material:', err);
-        res.status(500).json({ error: 'Error al eliminar material' });
+        console.error('Error al eliminar material:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al eliminar material' 
+        });
     }
 });
 
+app.post('/api/cursos/:id/comentario', validateToken, async (req, res) => {
+    const id = req.params.id;
+    const { comentario } = req.body;
+    const usuarioId = req.user.ID;
+
+    try {
+        if (!comentario) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'El comentario no puede estar vacío' 
+            });
+        }
+
+        const comentarioCompleto = {
+            usuarioId,
+            texto: comentario,
+            fecha: new Date().toISOString()
+        };
+
+        await db.query(`UPDATE cursos SET opiniones = JSON_ARRAY_APPEND(opiniones, '$', ?) WHERE id = ?`, [JSON.stringify(comentarioCompleto), id]);
+        
+        res.json({ 
+            success: true,
+            message: 'Comentario agregado correctamente'
+        });
+    } catch (err) {
+        console.error('Error al agregar el comentario:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al agregar el comentario' 
+        });
+    }
+});
+
+app.put('/api/cursos/:id/ranking', validateToken, async (req, res) => {
+    const id = req.params.id;
+    const { ranking } = req.body;
+
+    try {
+        if (!ranking || ranking < 1 || ranking > 5) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'El ranking debe ser un valor entre 1 y 5' 
+            });
+        }
+
+        const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ?', [id]);
+        if (cursos.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Curso no encontrado' 
+            });
+        }
+
+        const curso = cursos[0];
+        const nuevoRanking = (curso.ranking * curso.num_valoraciones + ranking) / (curso.num_valoraciones + 1);
+
+        await db.query('UPDATE cursos SET ranking = ?, num_valoraciones = num_valoraciones + 1 WHERE id = ?', [nuevoRanking, id]);
+        
+        res.json({ 
+            success: true,
+            data: { nuevoRanking }
+        });
+    } catch (err) {
+        console.error('Error al actualizar el ranking:', err);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al actualizar el ranking' 
+        });
+    }
+});
+
+// Configuración de servidor estático y manejo de errores
 app.use('/Uploads', express.static(path.join(__dirname, 'Uploads')));
 
 app.use((err, req, res, next) => {
-    console.error('🔥 Error global:', err);
+    console.error('Error global:', err);
     res.status(500).json({ 
+        success: false,
         error: 'Error interno del servidor',
         message: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
