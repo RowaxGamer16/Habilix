@@ -369,9 +369,9 @@ const Inicio_Admin: React.FC = () => {
             <IonIcon slot="start" icon={people} />
             Gestionar Usuarios
           </IonButton>
-          <IonButton expand="block" color="secondary" routerLink="/GestionCursos">
+          <IonButton expand="block" color="secondary" routerLink="/admin/system-settings">
             <IonIcon slot="start" icon={settingsSharp} />
-            Gestionar Cursos
+            Configuración del Sistema
           </IonButton>
         </div>
 
