@@ -25,7 +25,11 @@ app.use(express.json());
 // Configuración de Multer para subida de archivos
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'Uploads/');
+        const uploadDir = path.join(__dirname, 'Uploads');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -51,18 +55,27 @@ const upload = multer({
         } else {
             cb(new Error('Tipo de archivo no permitido'));
         }
+    },
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB
     }
 });
 
 // Conexión a la base de datos
-const db = await mysql.createPool({
-    connectionLimit: 10,
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'intercambio_de_abilidades',
-});
-console.log('✅ Conectado a la base de datos');
+let db;
+try {
+    db = await mysql.createPool({
+        connectionLimit: 10,
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'intercambio_de_abilidades',
+    });
+    console.log('✅ Conectado a la base de datos');
+} catch (error) {
+    console.error('❌ Error al conectar a la base de datos:', error);
+    process.exit(1);
+}
 
 const validateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -72,20 +85,20 @@ const validateToken = async (req, res, next) => {
     console.log('🔐 Token recibido:', token);
   
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
-      console.log('✅ Token decodificado:', decoded);
-  
-      const [results] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [decoded.id]);
-      if (results.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
-  
-      req.user = results[0];
-      next();
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'token');
+        console.log('✅ Token decodificado:', decoded);
+    
+        const [results] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [decoded.id]);
+        if (results.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
+    
+        req.user = results[0];
+        next();
     } catch (err) {
-      console.error('❌ Error al verificar token:', err.message);
-      return res.status(401).json({ 
-        error: 'Token inválido',
-        details: process.env.NODE_ENV === 'development' ? err.message : undefined
-      });
+        console.error('❌ Error al verificar token:', err.message);
+        return res.status(401).json({ 
+            error: 'Token inválido',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 };
 
@@ -97,7 +110,6 @@ const isAdmin = (req, res, next) => {
         res.status(403).json({ error: 'Acceso denegado. Se requieren privilegios de administrador' });
     }
 };
-
 
 // Rutas de autenticación
 app.post('/api/login', [
@@ -162,7 +174,7 @@ app.post('/api/register', [
         }
 
         const [result] = await db.query(
-            'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE, FECHA_CREACION) VALUES (?, ?, ?, "1", NOW())',
+            'INSERT INTO usuarios (NOMBRE_USUARIO, EMAIL, PASSWORD, ROLE, FECHA_CREACION) VALUES (?, ?, ?, 1, NOW())',
             [nombre_usuario, email, password]
         );
 
@@ -258,100 +270,6 @@ app.put('/api/usuario/actualizar', validateToken, [
         res.status(500).json({ 
             success: false,
             error: 'Error al actualizar el perfil',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
-    }
-});
-
-// Asegúrate de tener esta ruta en tu backend
-app.get('/api/admin/usuarios', validateToken, async (req, res) => {
-    try {
-        // Verificar que el usuario sea administrador (ROLE = 2)
-        if (req.user.ROLE !== 2) {
-            return res.status(403).json({ 
-                success: false,
-                error: 'Acceso denegado: Se requieren permisos de administrador' 
-            });
-        }
-
-        // Consulta a la base de datos
-        const [rows] = await db.query(`
-            SELECT 
-                ID,
-                NOMBRE_USUARIO,
-                EMAIL,
-                COALESCE(TELEFONO, '') AS TELEFONO,
-                DATE_FORMAT(FECHA_CREACION, '%Y-%m-%d %H:%i:%s') AS FECHA_CREACION,
-                ROLE
-            FROM usuarios
-            ORDER BY FECHA_CREACION DESC
-        `);
-
-        res.json({
-            success: true,
-            data: rows,
-            count: rows.length
-        });
-
-    } catch (error) {
-        console.error('Error al obtener usuarios:', error);
-        res.status(500).json({ 
-            success: false,
-            error: 'Error del servidor',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
-    }
-});
-// Ruta para eliminar usuarios (admin only) - Versión corregida
-app.delete('/api/admin/usuarios/:id', validateToken, async (req, res) => {
-    try {
-        if (req.user.ROLE !== 2) {
-            return res.status(403).json({ 
-                success: false,
-                error: 'Acceso denegado' 
-            });
-        }
-
-        const { id } = req.params;
-        
-        // Verificar que no sea auto-eliminación
-        if (parseInt(id) === req.user.ID) {
-            return res.status(400).json({
-                success: false,
-                error: 'No puedes eliminarte a ti mismo'
-            });
-        }
-
-        // CORRECCIÓN: Usar db.query con sintaxis MySQL
-        const [result] = await db.query(
-            'DELETE FROM usuarios WHERE ID = ?',
-            [id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                error: 'Usuario no encontrado'
-            });
-        }
-
-        // Para obtener el usuario eliminado (MySQL no tiene RETURNING)
-        const [deletedUser] = await db.query(
-            'SELECT * FROM usuarios WHERE ID = ?',
-            [id]
-        );
-
-        res.json({
-            success: true,
-            message: 'Usuario eliminado correctamente',
-            deletedUser: deletedUser[0] || null
-        });
-
-    } catch (error) {
-        console.error('Error al eliminar usuario:', error);
-        res.status(500).json({ 
-            success: false,
-            error: 'Error del servidor',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
@@ -474,7 +392,7 @@ app.get('/api/admin/cursos/:id', validateToken, isAdmin, async (req, res) => {
 
 app.put('/api/admin/cursos/:id', validateToken, isAdmin, upload.single('portada'), async (req, res) => {
     const idCurso = req.params.id;
-    const { nombre, descripcion, categoria, precio, entrega, horario, id_usuario } = req.body;
+    const { nombre, descripcion, profesor, categoria, precio, entrega, horario, id_usuario } = req.body;
     const portada = req.file ? `/Uploads/${req.file.filename}` : null;
 
     try {
@@ -496,6 +414,7 @@ app.put('/api/admin/cursos/:id', validateToken, isAdmin, upload.single('portada'
         const updates = {
             nombre,
             descripcion,
+            profesor,
             categoria: categoria || null,
             precio: precio || null,
             entrega: entrega || null,
@@ -507,7 +426,7 @@ app.put('/api/admin/cursos/:id', validateToken, isAdmin, upload.single('portada'
 
         if (portada && cursos[0].portada) {
             const oldImagePath = path.join(__dirname, cursos[0].portada);
-            unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
+            await unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
         }
 
         await db.query('UPDATE cursos SET ? WHERE id = ?', [updates, idCurso]);
@@ -539,13 +458,13 @@ app.delete('/api/admin/cursos/:id', validateToken, isAdmin, async (req, res) => 
 
         if (cursos[0].portada) {
             const imagePath = path.join(__dirname, cursos[0].portada);
-            unlinkAsync(imagePath).catch(err => console.error('Error al borrar imagen:', err));
+            await unlinkAsync(imagePath).catch(err => console.error('Error al borrar imagen:', err));
         }
 
         const materiales = JSON.parse(cursos[0].imagenes_materiales || '[]');
         for (const material of materiales) {
             const filePath = path.join(__dirname, material);
-            unlinkAsync(filePath).catch(err => console.error('Error al borrar material:', err));
+            await unlinkAsync(filePath).catch(err => console.error('Error al borrar material:', err));
         }
 
         await db.query('DELETE FROM cursos WHERE id = ?', [idCurso]);
@@ -563,26 +482,58 @@ app.delete('/api/admin/cursos/:id', validateToken, isAdmin, async (req, res) => 
     }
 });
 
-// Rutas de cursos
+// Rutas de cursos - Versión corregida
 app.post('/api/cursos', validateToken, upload.single('portada'), async (req, res) => {
-    const { nombre, descripcion, categoria, precio, entrega, horario, profesor } = req.body;
+    const { nombre, descripcion, profesor, categoria, precio, entrega, horario } = req.body;
     const portada = req.file ? `/Uploads/${req.file.filename}` : '';
     const id_usuario = req.user.ID;
 
     console.log('📚 Creando curso:', { nombre, id_usuario, profesor });
 
     try {
+        // Consulta SQL corregida - asegúrate que el número de columnas coincida con los valores
         const query = `
-            INSERT INTO cursos (nombre, descripcion, portada, categoria, precio, entrega, horario, profesor, ranking, opiniones, id_usuario, imagenes_materiales)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, '[]', ?, '[]')
+            INSERT INTO cursos (
+                nombre, 
+                descripcion, 
+                profesor, 
+                portada, 
+                categoria, 
+                precio, 
+                entrega, 
+                horario, 
+                ranking, 
+                id_usuario, 
+                imagenes_materiales
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, '[]')
         `;
-        const [result] = await db.query(query, [nombre, descripcion, portada, categoria, precio, entrega, horario, profesor, id_usuario]);
+        
+        // Parámetros en el orden correcto
+        const [result] = await db.query(query, [
+            nombre, 
+            descripcion, 
+            profesor, 
+            portada, 
+            categoria, 
+            precio, 
+            entrega, 
+            horario, 
+            id_usuario
+        ]);
 
-        res.json({ success: true, id: result.insertId });
+        res.json({ 
+            success: true, 
+            id: result.insertId,
+            portada: portada // Incluir la URL de la portada en la respuesta
+        });
         console.log('✅ Curso creado:', result.insertId);
     } catch (err) {
         console.error('❌ Error al crear curso:', err);
-        res.status(500).json({ error: 'Error al crear el curso' });
+        res.status(500).json({ 
+            success: false,
+            error: 'Error al crear el curso',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
     }
 });
 
@@ -601,11 +552,12 @@ app.get('/api/cursos', async (req, res) => {
     }
 });
 
+// Modifica el endpoint GET /api/cursos/:id para asegurar que devuelva id_usuario
 app.get('/api/cursos/:id', async (req, res) => {
     const id = req.params.id;
     try {
         const [results] = await db.query(`
-            SELECT c.*, u.NOMBRE_USUARIO as profesor 
+            SELECT c.*, u.NOMBRE_USUARIO as profesor, c.id_usuario
             FROM cursos c
             JOIN usuarios u ON c.id_usuario = u.ID
             WHERE c.id = ?
@@ -625,7 +577,7 @@ app.get('/api/cursos/:id', async (req, res) => {
 
 app.put('/api/cursos/:id', validateToken, upload.single('portada'), async (req, res) => {
     const idCurso = req.params.id;
-    const { nombre, descripcion, categoria, precio, entrega, horario, profesor } = req.body;
+    const { nombre, descripcion, profesor, categoria, precio, entrega, horario } = req.body;
     const portada = req.file ? `/Uploads/${req.file.filename}` : null;
 
     try {
@@ -640,11 +592,11 @@ app.put('/api/cursos/:id', validateToken, upload.single('portada'), async (req, 
         const updates = {};
         if (nombre) updates.nombre = nombre;
         if (descripcion) updates.descripcion = descripcion;
+        if (profesor) updates.profesor = profesor;
         if (categoria) updates.categoria = categoria;
         if (precio) updates.precio = precio;
         if (entrega) updates.entrega = entrega;
         if (horario) updates.horario = horario;
-        if (profesor) updates.profesor = profesor;
         if (portada) updates.portada = portada;
 
         if (Object.keys(updates).length === 0) {
@@ -653,7 +605,7 @@ app.put('/api/cursos/:id', validateToken, upload.single('portada'), async (req, 
 
         if (portada && cursos[0].portada) {
             const oldImagePath = path.join(__dirname, cursos[0].portada);
-            unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
+            await unlinkAsync(oldImagePath).catch(err => console.error('Error al borrar imagen anterior:', err));
         }
 
         const fields = Object.keys(updates).map((key) => `${key} = ?`);
@@ -678,13 +630,13 @@ app.delete('/api/cursos/:id', validateToken, async (req, res) => {
 
         if (cursos[0].portada) {
             const imagePath = path.join(__dirname, cursos[0].portada);
-            unlinkAsync(imagePath).catch(err => console.error('Error al borrar imagen:', err));
+            await unlinkAsync(imagePath).catch(err => console.error('Error al borrar imagen:', err));
         }
 
         const materiales = JSON.parse(cursos[0].imagenes_materiales || '[]');
         for (const material of materiales) {
             const filePath = path.join(__dirname, material);
-            unlinkAsync(filePath).catch(err => console.error('Error al borrar material:', err));
+            await unlinkAsync(filePath).catch(err => console.error('Error al borrar material:', err));
         }
 
         await db.query('DELETE FROM cursos WHERE id = ?', [idCurso]);
@@ -740,76 +692,104 @@ app.put('/api/cursos/:id/ranking', validateToken, async (req, res) => {
 
 app.post('/api/cursos/:id/materiales', validateToken, upload.array('materiales', 10), async (req, res) => {
     const idCurso = req.params.id;
+    const connection = await db.getConnection(); // Para usar transacciones
 
     try {
-        const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
-        if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para modificar este curso' });
+        await connection.beginTransaction();
 
+        // Verificar permisos
+        const [curso] = await connection.query('SELECT id_usuario, imagenes_materiales FROM cursos WHERE id = ?', [idCurso]);
+        if (!curso || curso.id_usuario !== req.user.ID) {
+            throw new Error('No tienes permiso para modificar este curso');
+        }
+
+        // Procesar archivos
         const archivos = req.files.map(file => {
-            const nombreOriginal = file.originalname;
+            const nombreOriginal = sanitizarNombreArchivo(file.originalname);
             const extension = path.extname(nombreOriginal);
-            const nombreBase = path.basename(nombreOriginal, extension);
-            const nuevoNombre = `${nombreBase}-${Date.now()}${extension}`;
+            const nuevoNombre = `${path.basename(nombreOriginal, extension)}-${Date.now()}${extension}`;
             const nuevoPath = path.join(__dirname, 'Uploads', nuevoNombre);
+
             fs.renameSync(file.path, nuevoPath);
             return `/Uploads/${nuevoNombre}`;
         });
 
-        const materialesActuales = JSON.parse(cursos[0].imagenes_materiales || '[]');
+        // Actualizar base de datos
+        const materialesActuales = JSON.parse(curso.imagenes_materiales || '[]');
         const nuevosMateriales = [...materialesActuales, ...archivos];
 
-        await db.query('UPDATE cursos SET imagenes_materiales = ? WHERE id = ?', [JSON.stringify(nuevosMateriales), idCurso]);
+        await connection.query('UPDATE cursos SET imagenes_materiales = ? WHERE id = ?', [
+            JSON.stringify(nuevosMateriales),
+            idCurso
+        ]);
 
-        console.log('📎 Materiales agregados al curso:', idCurso);
+        await connection.commit();
+
         res.json({ 
             success: true, 
             nuevosMateriales: archivos,
             nombresOriginales: req.files.map(file => file.originalname)
         });
     } catch (err) {
-        console.error('❌ Error al agregar materiales:', err);
+        await connection.rollback();
         
+        // Eliminar archivos subidos en caso de error
         if (req.files) {
             for (const file of req.files) {
                 const filePath = path.join(__dirname, 'Uploads', file.filename);
-                unlinkAsync(filePath).catch(err => console.error('Error al borrar archivo:', err));
+                await unlinkAsync(filePath).catch(console.error);
             }
         }
-        
-        res.status(500).json({ error: 'Error al agregar materiales' });
+
+        res.status(500).json({ error: err.message || 'Error al agregar materiales' });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
 app.delete('/api/cursos/:id/materiales', validateToken, async (req, res) => {
     const idCurso = req.params.id;
     const { archivo } = req.body;
+    const connection = await db.getConnection();
 
     try {
-        const [cursos] = await db.query('SELECT * FROM cursos WHERE id = ? AND id_usuario = ?', [idCurso, req.user.ID]);
-        if (cursos.length === 0) return res.status(403).json({ error: 'No tienes permiso para modificar este curso' });
+        await connection.beginTransaction();
 
-        const materialesActuales = JSON.parse(cursos[0].imagenes_materiales || '[]');
-        const nuevosMateriales = materialesActuales.filter(material => {
-            if (material === archivo) {
-                const filePath = path.join(__dirname, archivo);
-                unlinkAsync(filePath).catch(err => console.error('Error al borrar archivo:', err));
-                return false;
-            }
-            return true;
+        // Verificar permisos
+        const [curso] = await connection.query('SELECT id_usuario, imagenes_materiales FROM cursos WHERE id = ?', [idCurso]);
+        if (!curso || curso.id_usuario !== req.user.ID) {
+            throw new Error('No tienes permiso para modificar este curso');
+        }
+
+        // Eliminar archivo físico
+        const filePath = path.join(__dirname, archivo);
+        await unlinkAsync(filePath).catch(err => {
+            throw new Error('No se pudo eliminar el archivo físico');
         });
 
-        await db.query('UPDATE cursos SET imagenes_materiales = ? WHERE id = ?', [JSON.stringify(nuevosMateriales), idCurso]);
+        // Actualizar base de datos
+        const materialesActuales = JSON.parse(curso.imagenes_materiales || '[]');
+        const nuevosMateriales = materialesActuales.filter(m => m !== archivo);
 
-        console.log('🗑️ Material eliminado del curso:', archivo);
+        await connection.query('UPDATE cursos SET imagenes_materiales = ? WHERE id = ?', [
+            JSON.stringify(nuevosMateriales),
+            idCurso
+        ]);
+
+        await connection.commit();
         res.json({ success: true, nuevosMateriales });
     } catch (err) {
-        console.error('❌ Error al eliminar material:', err);
-        res.status(500).json({ error: 'Error al eliminar material' });
+        await connection.rollback();
+        res.status(500).json({ error: err.message || 'Error al eliminar material' });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
+// Configuración para servir archivos estáticos
 app.use('/Uploads', express.static(path.join(__dirname, 'Uploads')));
 
+// Middleware para manejo de errores
 app.use((err, req, res, next) => {
     console.error('🔥 Error global:', err);
     res.status(500).json({ 
@@ -818,6 +798,7 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Iniciar servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);

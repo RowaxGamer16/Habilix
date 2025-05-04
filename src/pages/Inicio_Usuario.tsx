@@ -88,13 +88,19 @@ type ApiResponse = {
 };
 
 const Inicio_Usuario: React.FC = () => {
+  console.log('Componente Inicio_Usuario montado'); // Debug: Componente montado
+
   const [userData, setUserData] = useState<UserData>({
     role: 'Usuario',
     createdCourses: 0,
     takenCourses: 0,
     rating: 0
   });
+  console.log('Estado inicial userData:', userData); // Debug: Estado inicial
+
   const [activeSegment, setActiveSegment] = useState('popular');
+  console.log('Segmento activo inicial:', activeSegment); // Debug: Segmento inicial
+
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -104,23 +110,31 @@ const Inicio_Usuario: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleLogout = () => {
+    console.log('Ejecutando handleLogout'); // Debug: Función de logout
     localStorage.removeItem('token');
+    console.log('Token eliminado del localStorage'); // Debug: Token eliminado
     history.push('/login');
     window.location.reload();
   };
 
   useEffect(() => {
+    console.log('useEffect principal ejecutándose'); // Debug: Efecto principal
+
     const fetchUserData = async () => {
+      console.log('Iniciando fetchUserData'); // Debug: Inicio de fetchUserData
       try {
         const token = localStorage.getItem('token');
+        console.log('Token obtenido del localStorage:', token ? 'Presente' : 'Ausente'); // Debug: Token
         
         if (!token) {
+          console.warn('No hay token - Redirigiendo a login'); // Debug: Sin token
           setError('No hay sesión activa');
           setIsLoading(false);
           history.push('/login');
           return;
         }
 
+        console.log('Realizando petición a /api/usuario'); // Debug: Petición API
         const response = await fetch('http://localhost:5000/api/usuario', {
           method: 'GET',
           headers: {
@@ -129,27 +143,35 @@ const Inicio_Usuario: React.FC = () => {
           },
         });
 
+        console.log('Respuesta recibida, status:', response.status); // Debug: Status respuesta
         if (!response.ok) {
           const errorData: ApiError = await response.json();
+          console.error('Error en la respuesta:', errorData); // Debug: Error API
           throw new Error(errorData.error || 'Error al obtener datos del usuario');
         }
 
         const data: ApiResponse = await response.json();
+        console.log('Datos de usuario recibidos:', data); // Debug: Datos usuario
         
         if (!data.usuario || typeof data.usuario.NOMBRE_USUARIO !== 'string') {
+          console.error('Estructura de datos incorrecta:', data); // Debug: Estructura incorrecta
           throw new Error('Estructura de datos del usuario incorrecta');
         }
 
+        console.log('Configurando userName:', data.usuario.NOMBRE_USUARIO); // Debug: Set userName
         setUserName(data.usuario.NOMBRE_USUARIO);
         
-        setUserData({
+        const newUserData = {
           role: data.usuario.ROLE === '1' ? 'Estudiante' : 'Instructor',
           createdCourses: data.usuario.CURSOS_CREADOS || 0,
           takenCourses: data.usuario.CURSOS_TOMADOS || 0,
           rating: data.usuario.RATING || 0
-        });
+        };
+        console.log('Configurando userData:', newUserData); // Debug: Set userData
+        setUserData(newUserData);
 
         setIsLoading(false);
+        console.log('Carga de datos de usuario completada'); // Debug: Carga completada
       } catch (err) {
         let errorMessage = 'Error al cargar los datos del usuario';
         
@@ -159,12 +181,13 @@ const Inicio_Usuario: React.FC = () => {
           errorMessage = err;
         }
 
-        console.error('Error al obtener datos:', errorMessage);
+        console.error('Error en fetchUserData:', errorMessage); // Debug: Error capturado
         setError(errorMessage);
         setIsLoading(false);
         
         if (errorMessage.toLowerCase().includes('token') || 
             errorMessage.toLowerCase().includes('autenticación')) {
+          console.warn('Error de autenticación - Limpiando token'); // Debug: Error auth
           localStorage.removeItem('token');
           history.push('/login');
         }
@@ -174,9 +197,11 @@ const Inicio_Usuario: React.FC = () => {
     fetchUserData();
 
     // Simulación de carga de cursos
+    console.log('Iniciando carga de cursos simulada'); // Debug: Carga cursos
     setLoading(true);
     setTimeout(() => {
-      setCourses([
+      console.log('Cursos simulados cargados'); // Debug: Cursos cargados
+      const demoCourses = [
         {
           id: 1,
           title: 'Fotografía Digital desde Cero',
@@ -219,8 +244,10 @@ const Inicio_Usuario: React.FC = () => {
           creator: 'Sofía Ramírez',
           creatorAvatar: 'S'
         }
-      ]);
+      ];
+      setCourses(demoCourses);
       setLoading(false);
+      console.log('Estado courses actualizado:', demoCourses); // Debug: Cursos seteados
     }, 1500);
   }, [history]);
 
@@ -230,8 +257,10 @@ const Inicio_Usuario: React.FC = () => {
     const matchesSegment = activeSegment === 'free' ? course.isFree : true;
     return matchesSearch && matchesSegment;
   });
+  console.log('Cursos filtrados:', filteredCourses.length); // Debug: Cursos filtrados
 
   if (loading) {
+    console.log('Mostrando estado de carga'); // Debug: Estado loading
     return (
       <IonPage>
         <IonContent className="loading-content">
@@ -244,6 +273,7 @@ const Inicio_Usuario: React.FC = () => {
     );
   }
 
+  console.log('Renderizando componente principal'); // Debug: Render principal
   return (
     <IonPage>
       <IonHeader>
@@ -251,7 +281,10 @@ const Inicio_Usuario: React.FC = () => {
           <IonSearchbar
             placeholder="Buscar cursos..."
             value={searchText}
-            onIonChange={e => setSearchText(e.detail.value!)}
+            onIonChange={e => {
+              console.log('Cambio en búsqueda:', e.detail.value); // Debug: Cambio búsqueda
+              setSearchText(e.detail.value!)
+            }}
             animated
             className="header-search"
           />
@@ -263,7 +296,10 @@ const Inicio_Usuario: React.FC = () => {
           isOpen={!!error}
           message={error || ''}
           duration={5000}
-          onDidDismiss={() => setError(null)}
+          onDidDismiss={() => {
+            console.log('Toast de error cerrado'); // Debug: Toast cerrado
+            setError(null)
+          }}
           color="danger"
           buttons={[{
             text: 'Cerrar',
@@ -308,11 +344,24 @@ const Inicio_Usuario: React.FC = () => {
         </IonCard>
 
         <div className="quick-actions">
-          <IonButton expand="block" color="primary" routerLink="/create-course">
+          <IonButton 
+            expand="block" 
+            color="primary" 
+            routerLink="/create-course"
+            onClick={() => console.log('Navegando a crear curso')} // Debug: Navegación
+          >
             <IonIcon slot="start" icon={addCircle} />
             Crear Nuevo Curso
           </IonButton>
-          <IonButton expand="block" color="medium" fill="outline" onClick={handleLogout}>
+          <IonButton 
+            expand="block" 
+            color="medium" 
+            fill="outline" 
+            onClick={() => {
+              console.log('Botón cerrar sesión clickeado'); // Debug: Click logout
+              handleLogout();
+            }}
+          >
             <IonIcon slot="start" icon={logOut} />
             Cerrar sesión
           </IonButton>
@@ -320,7 +369,10 @@ const Inicio_Usuario: React.FC = () => {
 
         <IonSegment
           value={activeSegment}
-          onIonChange={e => setActiveSegment(e.detail.value as string)}
+          onIonChange={e => {
+            console.log('Cambio de segmento:', e.detail.value); // Debug: Cambio segmento
+            setActiveSegment(e.detail.value as string)
+          }}
           className="courses-segment"
         >
           <IonSegmentButton value="popular">
@@ -339,7 +391,12 @@ const Inicio_Usuario: React.FC = () => {
 
         <div className="section-title">
           <h2>Cursos Disponibles</h2>
-          <IonButton fill="clear" size="small" routerLink="/Cursos">
+          <IonButton 
+            fill="clear" 
+            size="small" 
+            routerLink="/Cursos"
+            onClick={() => console.log('Navegando a todos los cursos')} // Debug: Navegación
+          >
             Ver todos
           </IonButton>
         </div>
@@ -354,7 +411,11 @@ const Inicio_Usuario: React.FC = () => {
             <IonRow>
               {filteredCourses.map(course => (
                 <IonCol size="12" sizeMd="6" sizeLg="4" key={course.id}>
-                  <IonCard className="course-card" routerLink={`/course/${course.id}`}>
+                  <IonCard 
+                    className="course-card" 
+                    routerLink={`/course/${course.id}`}
+                    onClick={() => console.log(`Navegando al curso ${course.id}`)} // Debug: Navegación
+                  >
                     <div className={`course-badge ${course.category.toLowerCase()}`}>
                       {course.category}
                     </div>
@@ -393,7 +454,12 @@ const Inicio_Usuario: React.FC = () => {
 
         <div className="section-title">
           <h2>Tus Cursos en Progreso</h2>
-          <IonButton fill="clear" size="small" routerLink="/my-courses">
+          <IonButton 
+            fill="clear" 
+            size="small" 
+            routerLink="/my-courses"
+            onClick={() => console.log('Navegando a mis cursos')} // Debug: Navegación
+          >
             Ver todos
           </IonButton>
         </div>
@@ -408,7 +474,12 @@ const Inicio_Usuario: React.FC = () => {
               <p>Progreso: 65% • 3/5 lecciones</p>
               <IonBadge color="primary">En progreso</IonBadge>
             </IonLabel>
-            <IonButton slot="end" fill="clear" routerLink="/course/1/continue">
+            <IonButton 
+              slot="end" 
+              fill="clear" 
+              routerLink="/course/1/continue"
+              onClick={() => console.log('Continuando curso 1')} // Debug: Acción
+            >
               Continuar
             </IonButton>
           </IonItem>
@@ -421,7 +492,12 @@ const Inicio_Usuario: React.FC = () => {
               <p>Progreso: 30% • 2/10 lecciones</p>
               <IonBadge color="secondary">Recién empezado</IonBadge>
             </IonLabel>
-            <IonButton slot="end" fill="clear" routerLink="/course/2/continue">
+            <IonButton 
+              slot="end" 
+              fill="clear" 
+              routerLink="/course/2/continue"
+              onClick={() => console.log('Continuando curso 2')} // Debug: Acción
+            >
               Continuar
             </IonButton>
           </IonItem>
