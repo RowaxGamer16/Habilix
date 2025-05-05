@@ -11,6 +11,26 @@ import { star, cloudUpload, trash, create, arrowBack, document, eye } from 'ioni
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const LOCAL_STORAGE_KEY = 'curso_materiales_';
 
+// Tipos para la API
+type ApiError = {
+  message: string;
+  error?: string;
+};
+
+type ApiResponse = {
+  usuario: {
+    ID: number;
+    NOMBRE_USUARIO: string;
+    EMAIL: string;
+    ROLE: string;
+    TELEFONO?: string;
+    FECHA_CREACION: string;
+    CURSOS_CREADOS?: number;
+    CURSOS_TOMADOS?: number;
+    RATING?: number;
+  };
+};
+
 interface Curso {
   id: number;
   nombre: string;
@@ -65,42 +85,122 @@ const CursoDetalle: React.FC = () => {
   const [mostrarVisor, setMostrarVisor] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const token = localStorage.getItem('token');
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Obtener usuario del localStorage con validación
-  const getUsuario = useCallback((): Usuario | null => {
-    try {
-      const rawUsuario = localStorage.getItem('usuario');
-      if (!rawUsuario) return null;
-      
-      const usuario = JSON.parse(rawUsuario);
-      
-      if (!usuario || typeof usuario !== 'object' || 
-          !usuario.ID || !usuario.NOMBRE_USUARIO || !usuario.EMAIL) {
-        console.error('Datos de usuario inválidos:', usuario);
-        localStorage.removeItem('usuario');
-        return null;
-      }
-      
-      console.log('Usuario obtenido:', {
-        id: usuario.ID,
-        nombre: usuario.NOMBRE_USUARIO,
-        email: usuario.EMAIL
-      });
-      
-      return usuario;
-    } catch (error) {
-      console.error('Error al parsear usuario:', error);
-      localStorage.removeItem('usuario');
+  // Función para obtener usuario desde la API
+  const fetchUserData = useCallback(async (): Promise<Usuario | null> => {
+    const token = localStorage.getItem('token');
+    console.log('Token obtenido del localStorage:', token ? 'Presente' : 'Ausente');
+    
+    if (!token) {
+      console.warn('No hay token - Redirigiendo a login');
+      setToastMsg('No hay sesión activa');
+      history.push('/login');
       return null;
     }
-  }, []);
+
+    try {
+      console.log('Realizando petición a /api/usuario');
+      const response = await fetch(`${API_URL}/usuario`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Respuesta recibida, status:', response.status);
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        console.error('Error en la respuesta:', errorData);
+        throw new Error(errorData.error || 'Error al obtener datos del usuario');
+      }
+
+      const data: ApiResponse = await response.json();
+      console.log('Datos de usuario recibidos:', data);
+      
+      if (!data.usuario || typeof data.usuario.NOMBRE_USUARIO !== 'string') {
+        console.error('Estructura de datos incorrecta:', data);
+        throw new Error('Estructura de datos del usuario incorrecta');
+      }
+
+      const usuarioData = {
+        ID: data.usuario.ID,
+        NOMBRE_USUARIO: data.usuario.NOMBRE_USUARIO,
+        EMAIL: data.usuario.EMAIL,
+        ROLE: data.usuario.ROLE,
+        TELEFONO: data.usuario.TELEFONO,
+        FECHA_CREACION: data.usuario.FECHA_CREACION
+      };
+
+      console.log('Usuario configurado:', usuarioData);
+      return usuarioData;
+    } catch (err) {
+      console.error('Error en fetchUserData:', err);
+      localStorage.removeItem('token');
+      history.push('/login');
+      return null;
+    }
+  }, [history]);
 
   // Cargar usuario al iniciar
   useEffect(() => {
-    const usuarioActual = getUsuario();
-    setUsuario(usuarioActual);
-  }, [getUsuario]);
+    const loadUserAndCourse = async () => {
+      const usuarioActual = await fetchUserData();
+      setUsuario(usuarioActual);
+      setAuthChecked(true);
+
+      if (!usuarioActual) return;
+
+      try {
+        // Cargar datos del curso
+        const response = await fetch(`${API_URL}/cursos/${id}`, {
+          headers: { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          }
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setToastMsg('Curso no encontrado');
+          } else {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+          }
+          return;
+        }
+
+        const data = await response.json();
+        
+        if (!data || typeof data.id_usuario !== 'number') {
+          throw new Error('Datos del curso inválidos');
+        }
+
+        console.log('Datos del curso:', {
+          id: data.id,
+          nombre: data.nombre,
+          creador_id: data.id_usuario,
+          profesor: data.profesor
+        });
+
+        setCurso(data);
+        setMateriales(cargarMaterialesLocales(id));
+        
+        // Verificar si el usuario es el creador
+        const esCreador = usuarioActual.ID === data.id_usuario;
+        console.log(`Verificación creador: Usuario ${usuarioActual.ID} vs Curso ${data.id_usuario} -> ${esCreador}`);
+        setEsCreador(esCreador);
+
+      } catch (err) {
+        console.error('Error al cargar curso:', err);
+        setToastMsg(err instanceof Error ? err.message : 'Error desconocido');
+        setMostrarToast(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserAndCourse();
+  }, [id, fetchUserData]);
 
   // Cargar materiales locales
   const cargarMaterialesLocales = useCallback((cursoId: string): MaterialLocal[] => {
@@ -121,73 +221,6 @@ const CursoDetalle: React.FC = () => {
       reader.readAsDataURL(file);
     });
   };
-
-  // Cargar datos del curso con verificación mejorada
-  useEffect(() => {
-    const fetchCurso = async () => {
-      if (isDeleted) return;
-      
-      const usuarioActual = getUsuario();
-      if (!usuarioActual) {
-        setToastMsg('Debes iniciar sesión para ver este curso');
-        setMostrarToast(true);
-        history.push('/login');
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/cursos/${id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            setToastMsg('Curso no encontrado');
-          } else {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
-          }
-          return;
-        }
-
-        const data = await response.json();
-        
-        // Validación estricta de los datos del curso
-        if (!data || typeof data.id_usuario !== 'number') {
-          throw new Error('Datos del curso inválidos');
-        }
-
-        console.log('Datos del curso:', {
-          id: data.id,
-          nombre: data.nombre,
-          creador_id: data.id_usuario,
-          profesor: data.profesor
-        });
-
-        setCurso(data);
-        setMateriales(cargarMaterialesLocales(id));
-        
-        // Verificación mejorada del creador
-        const esCreador = usuarioActual.ID === data.id_usuario;
-        console.log(`Verificación creador: Usuario ${usuarioActual.ID} vs Curso ${data.id_usuario} -> ${esCreador}`);
-        setEsCreador(esCreador);
-
-      } catch (err) {
-        console.error('Error al cargar curso:', err);
-        setToastMsg(err instanceof Error ? err.message : 'Error desconocido');
-        setMostrarToast(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (token) {
-      fetchCurso();
-    } else {
-      setToastMsg('Debes iniciar sesión para ver este curso');
-      setMostrarToast(true);
-      history.push('/login');
-    }
-  }, [id, token, isDeleted, history, getUsuario, cargarMaterialesLocales]);
 
   // Subir materiales (solo para creadores)
   const subirMateriales = async () => {
@@ -276,7 +309,9 @@ const CursoDetalle: React.FC = () => {
     try {
       const response = await fetch(`${API_URL}/cursos/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        }
       });
 
       const result = await response.json();
@@ -303,17 +338,17 @@ const CursoDetalle: React.FC = () => {
   };
 
   // Renderizado condicional
-  if (isDeleted) return null;
-
-  if (loading) {
+  if (!authChecked || loading) {
     return (
       <IonPage>
         <IonContent className="ion-padding">
-          <IonLoading isOpen={true} message="Cargando curso..." />
+          <IonLoading isOpen={true} message="Cargando..." />
         </IonContent>
       </IonPage>
     );
   }
+
+  if (isDeleted) return null;
 
   if (!curso) {
     return (
