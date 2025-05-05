@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -21,6 +21,26 @@ import { arrowBack, save } from 'ionicons/icons';
 import { useParams, useHistory } from 'react-router-dom';
 
 const API_URL = 'http://localhost:5000/api';
+
+// Tipos para la API
+type ApiError = {
+  message: string;
+  error?: string;
+};
+
+type ApiResponse = {
+  usuario: {
+    ID: number;
+    NOMBRE_USUARIO: string;
+    EMAIL: string;
+    ROLE: string;
+    TELEFONO?: string;
+    FECHA_CREACION: string;
+    CURSOS_CREADOS?: number;
+    CURSOS_TOMADOS?: number;
+    RATING?: number;
+  };
+};
 
 interface Curso {
   id: number;
@@ -64,25 +84,107 @@ const EditarCurso: React.FC = () => {
   const [mostrarToast, setMostrarToast] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [esCreador, setEsCreador] = useState(false);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const token = localStorage.getItem('token');
-  const rawUsuario = localStorage.getItem('usuario');
-  const usuario: Usuario | null = rawUsuario ? JSON.parse(rawUsuario) : null;
+  // Función para obtener usuario desde la API
+  const fetchUserData = useCallback(async (): Promise<Usuario | null> => {
+    const token = localStorage.getItem('token');
+    console.log('Token obtenido del localStorage:', token ? 'Presente' : 'Ausente');
+    
+    if (!token) {
+      console.warn('No hay token - Redirigiendo a login');
+      setError('No hay sesión activa');
+      history.push('/login');
+      return null;
+    }
 
-  // Cargar datos del curso
+    try {
+      console.log('Realizando petición a /api/usuario');
+      const response = await fetch(`${API_URL}/usuario`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Respuesta recibida, status:', response.status);
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        console.error('Error en la respuesta:', errorData);
+        throw new Error(errorData.error || 'Error al obtener datos del usuario');
+      }
+
+      const data: ApiResponse = await response.json();
+      console.log('Datos de usuario recibidos:', data);
+      
+      if (!data.usuario || typeof data.usuario.NOMBRE_USUARIO !== 'string') {
+        console.error('Estructura de datos incorrecta:', data);
+        throw new Error('Estructura de datos del usuario incorrecta');
+      }
+
+      const usuarioData = {
+        ID: data.usuario.ID,
+        NOMBRE_USUARIO: data.usuario.NOMBRE_USUARIO,
+        EMAIL: data.usuario.EMAIL,
+        ROLE: data.usuario.ROLE,
+        TELEFONO: data.usuario.TELEFONO,
+        FECHA_CREACION: data.usuario.FECHA_CREACION
+      };
+
+      console.log('Usuario configurado:', usuarioData);
+      return usuarioData;
+    } catch (err) {
+      console.error('Error en fetchUserData:', err);
+      localStorage.removeItem('token');
+      history.push('/login');
+      return null;
+    }
+  }, [history]);
+
+  // Cargar usuario y curso al iniciar
   useEffect(() => {
-    const fetchCurso = async () => {
+    const loadUserAndCourse = async () => {
+      const usuarioActual = await fetchUserData();
+      setUsuario(usuarioActual);
+      setAuthChecked(true);
+
+      if (!usuarioActual) return;
+
       try {
+        // Cargar datos del curso
         const response = await fetch(`${API_URL}/cursos/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}` 
+          }
         });
-        if (!response.ok) throw new Error('Error al obtener el curso');
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Curso no encontrado');
+          } else {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+          }
+          return;
+        }
 
         const data = await response.json();
+        
+        if (!data || typeof data.id_usuario !== 'number') {
+          throw new Error('Datos del curso inválidos');
+        }
+
+        console.log('Datos del curso:', {
+          id: data.id,
+          nombre: data.nombre,
+          creador_id: data.id_usuario,
+          profesor: data.profesor
+        });
+
         setCurso(data);
+        
         // Usar los valores reales del curso desde la API
         setFormData({
           nombre: data.nombre,
@@ -95,12 +197,10 @@ const EditarCurso: React.FC = () => {
         });
 
         // Verificar si el usuario es el creador
-        if (usuario) {
-          const esCreadorVerificado = Number(usuario.ID) === Number(data.id_usuario);
-          setEsCreador(esCreadorVerificado);
-          if (!esCreadorVerificado) {
-            setError('No tienes permiso para editar este curso');
-          }
+        const esCreadorVerificado = Number(usuarioActual.ID) === Number(data.id_usuario);
+        setEsCreador(esCreadorVerificado);
+        if (!esCreadorVerificado) {
+          setError('No tienes permiso para editar este curso');
         }
       } catch (err) {
         console.error('Error al cargar el curso:', err);
@@ -110,8 +210,8 @@ const EditarCurso: React.FC = () => {
       }
     };
 
-    fetchCurso();
-  }, [id, token, usuario]);
+    loadUserAndCourse();
+  }, [id, fetchUserData]);
 
   // Manejar cambios en los campos del formulario
   const handleInputChange = (field: keyof typeof formData, value: string | number) => {
@@ -128,7 +228,7 @@ const EditarCurso: React.FC = () => {
 
   // Guardar cambios
   const guardarCambios = async () => {
-    if (!esCreador) {
+    if (!esCreador || !usuario) {
       setError('No tienes permiso para editar este curso');
       return;
     }
@@ -155,7 +255,7 @@ const EditarCurso: React.FC = () => {
       const response = await fetch(`${API_URL}/cursos/${id}`, {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: formDataToSend,
       });
@@ -177,11 +277,11 @@ const EditarCurso: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (!authChecked || loading) {
     return (
       <IonPage>
         <IonContent className="ion-padding">
-          <IonLoading isOpen={true} message="Cargando curso..." />
+          <IonLoading isOpen={true} message="Cargando..." />
         </IonContent>
       </IonPage>
     );
@@ -196,7 +296,7 @@ const EditarCurso: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonContent className="ion-padding">
-          <p>No tienes permiso para editar este curso o el curso no existe.</p>
+          <p>{error || 'No tienes permiso para editar este curso o el curso no existe.'}</p>
           <IonButton expand="block" onClick={() => history.push('/cursos')}>
             <IonIcon slot="start" icon={arrowBack} />
             Volver a Cursos
@@ -300,9 +400,12 @@ const EditarCurso: React.FC = () => {
           {selectedImage && <p>{selectedImage.name}</p>}
           {curso.portada && !selectedImage && (
             <img
-              src={`${API_URL}${curso.portada}`}
+              src={`${API_URL}${curso.portada.startsWith('/') ? '' : '/'}${curso.portada}`}
               alt="Portada actual"
               style={{ maxWidth: '100%', maxHeight: '150px', marginTop: '10px' }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/assets/default-course.png';
+              }}
             />
           )}
         </IonItem>
