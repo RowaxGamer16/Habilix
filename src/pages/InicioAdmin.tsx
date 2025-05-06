@@ -298,20 +298,6 @@ const Inicio_Admin: React.FC = () => {
       <IonHeader>
         <IonToolbar>
           <IonTitle>Panel de Administración</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={handleLogout}>
-              <IonIcon slot="icon-only" icon={logOut} />
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-        <IonToolbar>
-          <IonSearchbar
-            placeholder="Buscar cursos o usuarios..."
-            value={searchText}
-            onIonChange={e => setSearchText(e.detail.value!)}
-            animated
-            className="header-search"
-          />
         </IonToolbar>
       </IonHeader>
 
@@ -346,20 +332,6 @@ const Inicio_Admin: React.FC = () => {
                 <IonIcon icon={shield} />
                 <IonLabel>Administrador</IonLabel>
               </IonChip>
-              <div className="stats-grid">
-                <div className="stat-item" onClick={() => history.push('/admin/users')}>
-                  <IonIcon icon={peopleCircle} color="primary" />
-                  <span>{userData.totalUsers} usuarios</span>
-                </div>
-                <div className="stat-item" onClick={() => history.push('/admin/pending-courses')}>
-                  <IonIcon icon={documentText} color="warning" />
-                  <span>{userData.pendingApprovals} pendientes</span>
-                </div>
-                <div className="stat-item" onClick={() => history.push('/admin/reported-issues')}>
-                  <IonIcon icon={alertCircle} color="danger" />
-                  <span>{userData.reportedIssues} reportes</span>
-                </div>
-              </div>
             </div>
           </IonCardContent>
         </IonCard>
@@ -374,157 +346,10 @@ const Inicio_Admin: React.FC = () => {
             Gestionar Cursos
           </IonButton>
         </div>
-
-        <IonSegment
-          value={activeSegment}
-          onIonChange={e => setActiveSegment(e.detail.value as string)}
-          className="admin-segment"
-        >
-          <IonSegmentButton value="pending">
-            <IonIcon icon={time} />
-            <IonLabel>Pendientes ({userData.pendingApprovals})</IonLabel>
-          </IonSegmentButton>
-          <IonSegmentButton value="reported">
-            <IonIcon icon={alertCircle} />
-            <IonLabel>Reportados ({userData.reportedIssues})</IonLabel>
-          </IonSegmentButton>
-          <IonSegmentButton value="approved">
-            <IonIcon icon={star} />
-            <IonLabel>Aprobados</IonLabel>
-          </IonSegmentButton>
-        </IonSegment>
-
-        <div className="section-title">
-          <h2>Cursos para Revisión</h2>
-          <IonButton fill="clear" size="small" routerLink="/admin/all-courses">
-            Ver todos
-          </IonButton>
-        </div>
-
-        {filteredCourses.length === 0 ? (
-          <div className="empty-state">
-            <IonIcon icon={search} size="large" />
-            <p>No hay cursos para mostrar</p>
-          </div>
-        ) : (
-          <IonGrid className="courses-grid">
-            <IonRow>
-              {filteredCourses.map(course => (
-                <IonCol size="12" sizeMd="6" sizeLg="4" key={course.id}>
-                  <IonCard className="admin-course-card">
-                    <div className={`course-status ${course.status}`}>
-                      {course.status === 'pending' ? 'Pendiente' : 
-                       course.status === 'reported' ? 'Reportado' : 'Aprobado'}
-                    </div>
-                    <IonCardHeader>
-                      <IonCardTitle>{course.title}</IonCardTitle>
-                      <IonCardSubtitle>
-                        <IonAvatar className="creator-avatar">
-                          {course.creatorAvatar}
-                        </IonAvatar>
-                        {course.creator}
-                      </IonCardSubtitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                      <div className="course-meta">
-                        <span className="rating">
-                          <IonIcon icon={star} color="warning" />
-                          {course.rating.toFixed(1)}
-                        </span>
-                        <span className="students">
-                          <IonIcon icon={people} color="medium" />
-                          {course.students.toLocaleString()}
-                        </span>
-                        {course.isFree ? (
-                          <IonChip color="success">GRATIS</IonChip>
-                        ) : (
-                          <span className="price">${course.price?.toFixed(2)}</span>
-                        )}
-                      </div>
-                      <div className="admin-actions">
-                        <IonButton 
-                          size="small" 
-                          color="success" 
-                          fill="outline"
-                          onClick={() => handleApproveCourse(course.id)}
-                        >
-                          Aprobar
-                        </IonButton>
-                        <IonButton 
-                          size="small" 
-                          color="danger" 
-                          fill="outline"
-                          onClick={() => handleRejectCourse(course.id)}
-                        >
-                          Rechazar
-                        </IonButton>
-                        <IonButton 
-                          size="small" 
-                          color="medium" 
-                          fill="clear"
-                          routerLink={`/admin/course-details/${course.id}`}
-                        >
-                          Detalles
-                        </IonButton>
-                      </div>
-                    </IonCardContent>
-                  </IonCard>
-                </IonCol>
-              ))}
-            </IonRow>
-          </IonGrid>
-        )}
-
-        <div className="section-title">
-          <h2>Actividad Reciente</h2>
-          <IonButton fill="clear" size="small" routerLink="/admin/activity-log">
-            Ver registro completo
-          </IonButton>
-        </div>
-
-        <IonList className="activity-list">
-          <IonItem>
-            <IonAvatar slot="start" className="activity-icon">
-              <IonIcon icon={personCircle} color="primary" />
-            </IonAvatar>
-            <IonLabel>
-              <h3>Nuevo usuario registrado</h3>
-              <p>Juan Pérez • Hace 15 minutos</p>
-            </IonLabel>
-            <IonButton slot="end" fill="clear" routerLink="/admin/user/123">
-              Ver
-            </IonButton>
-          </IonItem>
-          <IonItem>
-            <IonAvatar slot="start" className="activity-icon">
-              <IonIcon icon={documentText} color="warning" />
-            </IonAvatar>
-            <IonLabel>
-              <h3>Curso reportado</h3>
-              <p>"Fotografía Digital" • Problema: Contenido inapropiado</p>
-            </IonLabel>
-            <IonButton slot="end" fill="clear" routerLink="/admin/report/456">
-              Revisar
-            </IonButton>
-          </IonItem>
-        </IonList>
       </IonContent>
     </IonPage>
   );
 
-  function handleApproveCourse(courseId: number) {
-    // Lógica para aprobar curso
-    console.log(`Curso ${courseId} aprobado`);
-    setCourses(courses.map(c => 
-      c.id === courseId ? {...c, status: 'approved'} : c
-    ));
-  }
-
-  function handleRejectCourse(courseId: number) {
-    // Lógica para rechazar curso
-    console.log(`Curso ${courseId} rechazado`);
-    setCourses(courses.filter(c => c.id !== courseId));
-  }
 };
 
 export default Inicio_Admin;

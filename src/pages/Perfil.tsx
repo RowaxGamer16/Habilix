@@ -16,7 +16,7 @@ interface UserProfile {
   ID: number;
   NOMBRE_USUARIO: string;
   EMAIL: string;
-  ROLE: string;
+  ROLE: string | number;
   TELEFONO?: string;
   FECHA_CREACION: string;
   CURSOS_CREADOS?: number;
@@ -62,6 +62,7 @@ const Perfil: React.FC = () => {
         }
 
         const data = await response.json();
+        console.log('Datos del usuario recibidos:', data); // Depuración
         
         if (!data.usuario) {
           throw new Error('Datos de usuario no encontrados');
@@ -100,9 +101,7 @@ const Perfil: React.FC = () => {
     localStorage.removeItem('token');
     setShowLogoutToast(true);
     setTimeout(() => {
-      // Redirige al login y recarga la página
       window.location.assign('/login');
-      
     }, 1500);
   };
 
@@ -126,10 +125,21 @@ const Perfil: React.FC = () => {
     return new Date(dateString).toLocaleDateString('es-ES', options);
   };
 
-  const getRoleName = (role: string) => {
-    if (role === '1') return 'Estudiante';
-    if (role === '2') return 'Administrador';
-    return 'Instructor'; // Valor por defecto si no es 1 ni 2
+  const getRoleName = (role: string | number) => {
+    // Convertir a string si es número y eliminar decimales si los hay
+    const roleStr = typeof role === 'number' ? role.toString() : role;
+    const normalizedRole = roleStr.includes('.') ? roleStr.split('.')[0] : roleStr;
+    
+    switch(normalizedRole) {
+      case '1':
+        return 'Instructor';
+      case '2':
+        return 'Administrador';
+      case '3':
+        return 'Estudiante';
+      default:
+        return `Rol desconocido (${role})`;
+    }
   };
 
   return (
@@ -151,7 +161,9 @@ const Perfil: React.FC = () => {
             />
           </IonAvatar>
           <h1>{userData.NOMBRE_USUARIO}</h1>
-          <IonBadge color="primary">{getRoleName(userData.ROLE)}</IonBadge>
+          <IonBadge color="primary">
+            {getRoleName(userData.ROLE)}  {/* Muestra el ID del rol para depuración */}
+          </IonBadge>
         </div>
 
         <IonCard className="profile-card">
@@ -182,31 +194,6 @@ const Perfil: React.FC = () => {
                 <h3>{formatDate(userData.FECHA_CREACION)}</h3>
               </IonLabel>
             </IonItem>
-          </IonCardContent>
-        </IonCard>
-
-        <IonCard className="stats-card">
-          <IonCardHeader>
-            <IonText color="primary"><h2>Estadísticas</h2></IonText>
-          </IonCardHeader>
-          <IonCardContent>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <IonIcon icon={schoolOutline} color="primary" size="large" />
-                <h3>{userData.CURSOS_CREADOS}</h3>
-                <p>Cursos creados</p>
-              </div>
-              <div className="stat-item">
-                <IonIcon icon={personCircleOutline} color="success" size="large" />
-                <h3>{userData.CURSOS_TOMADOS}</h3>
-                <p>Cursos tomados</p>
-              </div>
-              <div className="stat-item">
-                <IonIcon icon={starOutline} color="warning" size="large" />
-                <h3>{userData.RATING?.toFixed(1) || '0.0'}</h3>
-                <p>Rating promedio</p>
-              </div>
-            </div>
           </IonCardContent>
         </IonCard>
 

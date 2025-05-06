@@ -235,51 +235,6 @@ const Inicio: React.FC = () => {
           </IonGrid>
         </section>
 
-        {/* Featured Skills */}
-        <section className="featured-section">
-          <IonGrid>
-            <IonRow>
-              <IonCol>
-                <h2 className="section-title">Habilidades Destacadas</h2>
-                <p className="section-subtitle">Explora nuestras categorías más populares</p>
-              </IonCol>
-            </IonRow>
-            <IonRow>
-              {habilidadesDestacadas.map((habilidad, index) => (
-                <IonCol size="12" sizeMd="4" key={index}>
-                  <IonCard className="skill-card">
-                    <div className="skill-badge">Popular</div>
-                    <IonImg src={habilidad.imagen} className="skill-image" />
-                    <IonCardHeader>
-                      <IonCardTitle>{habilidad.titulo}</IonCardTitle>
-                      <div className="skill-meta">
-                        <span>
-                          <IonIcon icon={star} color="warning" />
-                          {habilidad.rating}
-                        </span>
-                        <span>
-                          <IonIcon icon={people} />
-                          {habilidad.estudiantes}
-                        </span>
-                      </div>
-                    </IonCardHeader>
-                    <IonCardContent>
-                      <p>{habilidad.descripcion}</p>
-                      <div className="skill-progress">
-                        <IonLabel>Nivel: {habilidad.nivel}%</IonLabel>
-                        <IonProgressBar value={habilidad.nivel / 100} color="primary"></IonProgressBar>
-                      </div>
-                      <IonButton expand="block" fill="outline" routerLink="/Cursos">
-                        Ver Detalles
-                      </IonButton>
-                    </IonCardContent>
-                  </IonCard>
-                </IonCol>
-              ))}
-            </IonRow>
-          </IonGrid>
-        </section>
-
         {/* How It Works */}
         <section className="how-it-works">
           <IonGrid>
@@ -365,43 +320,6 @@ const Inicio: React.FC = () => {
                   ))}
                 </Swiper>
               </IonCol>
-            </IonRow>
-          </IonGrid>
-        </section>
-
-        {/* Featured Instructors */}
-        <section className="instructors-section">
-          <IonGrid>
-            <IonRow>
-              <IonCol>
-                <h2 className="section-title">Nuestros Instructores</h2>
-                <p className="section-subtitle">Aprende de los mejores profesionales</p>
-              </IonCol>
-            </IonRow>
-            <IonRow>
-              {instructores.map((instructor, index) => (
-                <IonCol size="12" sizeMd="6" key={index}>
-                  <IonCard className="instructor-card">
-                    <IonImg src={instructor.avatar} className="instructor-avatar" />
-                    <div className="instructor-info">
-                      <h3>{instructor.nombre}</h3>
-                      <p className="specialty">{instructor.especialidad}</p>
-                      <div className="instructor-rating">
-                        <IonIcon icon={star} color="warning" />
-                        <span>{instructor.rating}</span>
-                      </div>
-                      <div className="instructor-skills">
-                        {instructor.habilidades.map((skill, i) => (
-                          <IonChip key={i} color="primary">{skill}</IonChip>
-                        ))}
-                      </div>
-                      <IonButton fill="outline" size="small" routerLink="/Instructores">
-                        Ver Perfil
-                      </IonButton>
-                    </div>
-                  </IonCard>
-                </IonCol>
-              ))}
             </IonRow>
           </IonGrid>
         </section>
