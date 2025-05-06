@@ -275,7 +275,216 @@ app.put('/api/usuario/actualizar', validateToken, [
     }
 });
 
-// Rutas de administrador - Usuarios
+// Agrega esto en tu server.js, en la sección de rutas de administrador - Usuarios
+
+// Ruta para crear un nuevo usuario (admin)
+app.post('/api/admin/usuarios', validateToken, isAdmin, [
+    // Validaciones
+    body('NOMBRE_USUARIO').trim()
+        .notEmpty().withMessage('El nombre de usuario es requerido')
+        .isLength({ min: 3 }).withMessage('El nombre debe tener al menos 3 caracteres'),
+    body('EMAIL').trim()
+        .notEmpty().withMessage('El email es requerido')
+        .isEmail().withMessage('Debe ser un email válido')
+        .normalizeEmail(),
+    body('PASSWORD')
+        .notEmpty().withMessage('La contraseña es requerida')
+        .isLength({ min: 5 }).withMessage('La contraseña debe tener al menos 5 caracteres'),
+    body('CONFIRM_PASSWORD')
+        .notEmpty().withMessage('Debes confirmar la contraseña')
+        .custom((value, { req }) => {
+            if (value !== req.body.PASSWORD) {
+                throw new Error('Las contraseñas no coinciden');
+            }
+            return true;
+        }),
+    body('TELEFONO').optional()
+        .isLength({ min: 8, max: 15 }).withMessage('El teléfono debe tener entre 8 y 15 caracteres'),
+    body('ROLE').optional()
+        .isIn([1, 2]).withMessage('Rol inválido (1: Usuario, 2: Admin)')
+        .default(1)
+], async (req, res) => {
+    // Verificar errores de validación
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+            success: false,
+            error: 'Error de validación',
+            details: errors.array().map(err => ({
+                field: err.param,
+                message: err.msg
+            }))
+        });
+    }
+
+    // Extraer datos del cuerpo de la petición
+    const { 
+        NOMBRE_USUARIO, 
+        EMAIL, 
+        PASSWORD, 
+        TELEFONO, 
+        ROLE 
+    } = req.body;
+
+    try {
+        // 1. Verificar si el email ya existe
+        const [existingUsers] = await db.query(
+            'SELECT * FROM usuarios WHERE EMAIL = ?', 
+            [EMAIL]
+        );
+        
+        if (existingUsers.length > 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'El correo electrónico ya está registrado'
+            });
+        }
+
+        // 2. Crear el nuevo usuario (sin hashear la contraseña)
+        const [result] = await db.query(
+            `INSERT INTO usuarios 
+            (NOMBRE_USUARIO, EMAIL, PASSWORD, TELEFONO, ROLE, FECHA_CREACION) 
+            VALUES (?, ?, ?, ?, ?, NOW())`,
+            [NOMBRE_USUARIO, EMAIL, PASSWORD, TELEFONO || null, ROLE || 1]
+        );
+
+        // 3. Obtener el usuario recién creado
+        const [newUser] = await db.query(`
+            SELECT 
+                ID,
+                NOMBRE_USUARIO,
+                EMAIL,
+                COALESCE(TELEFONO, '') AS TELEFONO,
+                DATE_FORMAT(FECHA_CREACION, '%Y-%m-%d %H:%i:%s') AS FECHA_CREACION,
+                ROLE
+            FROM usuarios
+            WHERE ID = ?
+        `, [result.insertId]);
+
+        // 4. Responder con éxito
+        return res.status(201).json({
+            success: true,
+            data: newUser[0], // Estructura que espera el frontend
+            message: 'Usuario creado correctamente'
+        });
+
+    } catch (error) {
+        console.error('Error al crear usuario:', error);
+        
+        // Manejar errores específicos de la base de datos
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ 
+                success: false,
+                error: 'El correo electrónico ya está registrado'
+            });
+        }
+
+        // Error genérico del servidor
+        return res.status(500).json({ 
+            success: false,
+            error: 'Error del servidor al crear usuario',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Ruta para actualizar un usuario (admin)
+app.put('/api/admin/usuarios/:id', validateToken, isAdmin, [
+    body('NOMBRE_USUARIO').optional().trim().isLength({ min: 3 }).withMessage('El nombre debe tener al menos 3 caracteres'),
+    body('TELEFONO').optional().isLength({ min: 8, max: 15 }).withMessage('Teléfono debe tener entre 8 y 15 caracteres'),
+    body('ROLE').optional().isIn([1, 2]).withMessage('Rol inválido (1: Usuario, 2: Admin)'),
+    body('PASSWORD').optional().isLength({ min: 5 }).withMessage('La contraseña debe tener al menos 5 caracteres'),
+    body('CONFIRM_PASSWORD').optional().custom((value, { req }) => {
+        if (req.body.PASSWORD && value !== req.body.PASSWORD) {
+            throw new Error('Las contraseñas no coinciden');
+        }
+        return true;
+    })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+            success: false,
+            errors: errors.array().map(err => ({
+                field: err.param,
+                message: err.msg
+            }))
+        });
+    }
+
+    const { id } = req.params;
+    const { NOMBRE_USUARIO, TELEFONO, ROLE, PASSWORD } = req.body;
+
+    try {
+        // Verificar si el usuario existe
+        const [users] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [id]);
+        if (users.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                error: 'Usuario no encontrado'
+            });
+        }
+
+        const user = users[0];
+
+        // No permitir que un admin se quite sus propios privilegios
+        if (parseInt(id) === req.user.ID && ROLE !== undefined && ROLE !== 2) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'No puedes cambiar tu propio rol de administrador'
+            });
+        }
+
+        // Preparar los campos a actualizar
+        const updates = {};
+        if (NOMBRE_USUARIO !== undefined) updates.NOMBRE_USUARIO = NOMBRE_USUARIO;
+        if (TELEFONO !== undefined) updates.TELEFONO = TELEFONO || null;
+        if (ROLE !== undefined) updates.ROLE = ROLE;
+        
+        // Si se proporcionó una nueva contraseña (sin hashear)
+        if (PASSWORD) {
+            updates.PASSWORD = PASSWORD;
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: 'No se proporcionaron datos para actualizar' 
+            });
+        }
+
+        // Actualizar el usuario
+        await db.query('UPDATE usuarios SET ? WHERE ID = ?', [updates, id]);
+
+        // Obtener el usuario actualizado sin la contraseña
+        const [updatedUser] = await db.query(`
+            SELECT 
+                ID,
+                NOMBRE_USUARIO,
+                EMAIL,
+                COALESCE(TELEFONO, '') AS TELEFONO,
+                DATE_FORMAT(FECHA_CREACION, '%Y-%m-%d %H:%i:%s') AS FECHA_CREACION,
+                ROLE
+            FROM usuarios
+            WHERE ID = ?
+        `, [id]);
+
+        res.json({
+            success: true,
+            data: updatedUser[0],
+            message: 'Usuario actualizado correctamente'
+        });
+    } catch (error) {
+        console.error('Error al actualizar usuario:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Error del servidor al actualizar usuario',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Rutas de administrador - Usuarios (GET todos)
 app.get('/api/admin/usuarios', validateToken, isAdmin, async (req, res) => {
     try {
         const [rows] = await db.query(`
@@ -305,10 +514,12 @@ app.get('/api/admin/usuarios', validateToken, isAdmin, async (req, res) => {
     }
 });
 
+// Ruta para eliminar usuario (admin)
 app.delete('/api/admin/usuarios/:id', validateToken, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         
+        // Verificar que no sea el mismo usuario
         if (parseInt(id) === req.user.ID) {
             return res.status(400).json({
                 success: false,
@@ -316,21 +527,37 @@ app.delete('/api/admin/usuarios/:id', validateToken, isAdmin, async (req, res) =
             });
         }
 
-        const [result] = await db.query('DELETE FROM usuarios WHERE ID = ?', [id]);
-
-        if (result.affectedRows === 0) {
+        // Verificar que el usuario exista
+        const [user] = await db.query('SELECT * FROM usuarios WHERE ID = ?', [id]);
+        if (user.length === 0) {
             return res.status(404).json({
                 success: false,
                 error: 'Usuario no encontrado'
             });
         }
 
+        // Eliminar el usuario
+        const [result] = await db.query('DELETE FROM usuarios WHERE ID = ?', [id]);
+
         res.json({
             success: true,
-            message: 'Usuario eliminado correctamente'
+            message: 'Usuario eliminado correctamente',
+            deletedUser: {
+                id: user[0].ID,
+                email: user[0].EMAIL
+            }
         });
     } catch (error) {
         console.error('Error al eliminar usuario:', error);
+        
+        // Manejar error de clave foránea
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(400).json({
+                success: false,
+                error: 'No se puede eliminar el usuario porque tiene registros asociados'
+            });
+        }
+
         res.status(500).json({ 
             success: false,
             error: 'Error del servidor',
